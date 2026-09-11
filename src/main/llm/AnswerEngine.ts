@@ -202,7 +202,10 @@ export class AnswerEngine extends EventEmitter {
         this.queued = req;
         return;
       }
-      this.cancelActive(req.restartOf ? 'restarted with fuller question' : 'newer question');
+      // A restart of a *different* (finished) card must not kill the active one.
+      if (!req.restartOf || this.active.card.id === req.restartOf) {
+        this.cancelActive(req.restartOf ? 'restarted with fuller question' : 'newer question');
+      }
     } else if (
       now - this.lastAutoAt < MIN_AUTO_GAP_MS &&
       wordOverlap(this.lastAutoQuestion, req.question) < 0.8 &&
@@ -224,9 +227,12 @@ export class AnswerEngine extends EventEmitter {
   }
 
   /** The final transcript arrived: record the true end of the question for latency stats. */
-  updateQuestionEnd(id: string, ts: number): void {
+  updateQuestionEnd(id: string, ts: number, finalText?: string): void {
     const card = this.cards.find((c) => c.id === id);
-    if (card) card.latency.questionEndTs = ts;
+    if (!card) return;
+    card.latency.questionEndTs = ts;
+    if (finalText) card.question = finalText;
+    if (card.status === 'done') this.deps.db.saveAnswer(card);
   }
 
   activeQuestion(): { id: string; question: string; speculative: boolean } | null {
@@ -318,10 +324,18 @@ export class AnswerEngine extends EventEmitter {
       pendingEvent: null,
     };
     this.active = active;
-    // Replace a restarted card in place, otherwise push newest-first.
+    // Replace a restarted card in place, otherwise push newest-first. Keep the previous
+    // headline/points visible (dimmed) until the restarted answer produces its own (§5.2.3).
     const idx = this.cards.findIndex((c) => c.id === card.id);
-    if (idx >= 0) this.cards[idx] = card;
-    else this.cards.unshift(card);
+    if (idx >= 0) {
+      const prev = this.cards[idx]!;
+      if (prev.headline) {
+        card.headline = prev.headline;
+        card.points = prev.points;
+        card.stale = true;
+      }
+      this.cards[idx] = card;
+    } else this.cards.unshift(card);
     if (this.cards.length > 40) this.cards.pop();
     this.emitEvent({ type: 'start', card });
 
@@ -354,6 +368,8 @@ export class AnswerEngine extends EventEmitter {
             }
           } else {
             const parsed = parseAnswer(full);
+            if (card.stale && !parsed.headline) return; // keep the carried-over headline until we have a new one
+            card.stale = false;
             card.headline = cleanInline(parsed.headline);
             card.points = [
               ...parsed.points.map(cleanInline),
@@ -383,6 +399,7 @@ export class AnswerEngine extends EventEmitter {
         card.points = parsed.points.map(cleanInline);
         if (!card.latency.headlineDoneTs && card.headline) card.latency.headlineDoneTs = Date.now();
       }
+      card.stale = false;
       card.status = 'done';
       card.latency.doneTs = Date.now();
       card.model = result.model;
@@ -393,7 +410,7 @@ export class AnswerEngine extends EventEmitter {
           ? card.latency.firstTokenTs - card.latency.questionEndTs
           : null;
       log.info(
-        `answer ${card.id} done in ${card.latency.doneTs - requestStartTs} ms` +
+        `answer ${card.id} done in ${card.latency.doneTs - requestStartTs} ms (ttft ${card.latency.firstTokenTs ? card.latency.firstTokenTs - requestStartTs : '?'} ms)` +
           (ftl !== null ? `, first token ${ftl} ms after question end` : '') +
           ` (in ${result.usage.input}, cached ${result.usage.cacheRead}, out ${result.usage.output})`,
       );
@@ -451,6 +468,7 @@ export class AnswerEngine extends EventEmitter {
       headline: a.card.headline,
       points: a.card.points,
       content: a.card.content,
+      stale: a.card.stale,
     };
     const now = Date.now();
     if (now - a.lastEmit >= EMIT_INTERVAL_MS) {
@@ -487,6 +505,7 @@ export class AnswerEngine extends EventEmitter {
       headline: a.card.headline,
       points: a.card.points,
       content: a.card.content,
+      stale: a.card.stale,
     });
   }
 

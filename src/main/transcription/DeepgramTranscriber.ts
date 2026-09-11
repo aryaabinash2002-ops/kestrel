@@ -47,8 +47,9 @@ export function deepgramQuery(opts: {
     sample_rate: String(opts.sampleRate),
     channels: '1',
     interim_results: 'true',
-    endpointing: '300',
-    utterance_end_ms: '1000',
+    // §5.1 defaults; KESTREL_DG_ENDPOINTING / KESTREL_DG_UTTERANCE_END allow latency tuning experiments.
+    endpointing: process.env['KESTREL_DG_ENDPOINTING'] || '200',
+    utterance_end_ms: process.env['KESTREL_DG_UTTERANCE_END'] || '1000',
     smart_format: 'true',
     punctuate: 'true',
     vad_events: 'true',

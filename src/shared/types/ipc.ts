@@ -54,7 +54,15 @@ export interface SessionState {
 
 export type AnswerEvent =
   | { type: 'start'; card: AnswerCard }
-  | { type: 'delta'; id: string; text: string; headline: string; points: string[]; content: string }
+  | {
+      type: 'delta';
+      id: string;
+      text: string;
+      headline: string;
+      points: string[];
+      content: string;
+      stale?: boolean;
+    }
   | { type: 'headline'; id: string; headline: string; ts: number }
   | { type: 'done'; id: string; card: AnswerCard }
   | { type: 'cancelled'; id: string; reason: string }

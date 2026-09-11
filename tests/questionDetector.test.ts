@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   QuestionDetector,
+  endsMidClause,
   looksLikeQuestion,
   type DetectedQuestion,
   type QuestionUpdate,
@@ -39,12 +40,21 @@ describe('looksLikeQuestion (§5.3 heuristic)', () => {
   });
 });
 
+describe('endsMidClause', () => {
+  it('flags interims that stop on an article/preposition/auxiliary', () => {
+    expect(endsMidClause('So can you walk me through a')).toBe(true);
+    expect(endsMidClause('and what would you say is your')).toBe(true);
+    expect(endsMidClause('tell me about a time you failed')).toBe(false);
+    expect(endsMidClause('what is a mutex?')).toBe(false);
+  });
+});
+
 describe('QuestionDetector', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   function make() {
-    const d = new QuestionDetector({ stableMs: 350 });
+    const d = new QuestionDetector({ stableMs: 350, stableMsIncomplete: 700 });
     const questions: DetectedQuestion[] = [];
     const updates: QuestionUpdate[] = [];
     const statements: unknown[] = [];
@@ -131,12 +141,46 @@ describe('QuestionDetector', () => {
     expect(statements).toHaveLength(1);
   });
 
+  it('waits longer to speculate when the interim ends mid-clause', () => {
+    const { d, questions } = make();
+    d.interim('so can you walk me through a', 1000);
+    vi.advanceTimersByTime(400);
+    expect(questions).toHaveLength(0); // "…through a" → incomplete: 700 ms required
+    vi.advanceTimersByTime(300);
+    expect(questions).toHaveLength(1);
+  });
+
+  it('merges an utterance that starts right after the previous final into the same question', () => {
+    const { d, questions, updates } = make();
+    d.interim('what would you say is your biggest', 1000);
+    d.final('What would you say is your biggest', 1300); // provider split the question at a short pause
+    expect(questions).toHaveLength(1);
+    vi.advanceTimersByTime(400);
+    d.interim('weakness', 1700);
+    d.final('weakness?', 1800);
+    expect(questions).toHaveLength(1); // same key, no second card
+    const last = updates[updates.length - 1]!;
+    expect(last.key).toBe(questions[0]!.key);
+    expect(last.text).toBe('What would you say is your biggest weakness?');
+    expect(last.restart).toBe(true);
+  });
+
+  it('starts a new question when the previous final is older than the merge window', () => {
+    const { d, questions } = make();
+    d.final('What is a mutex?', 500);
+    vi.advanceTimersByTime(2000);
+    d.final('And how is it different from a semaphore?', 3000);
+    expect(questions).toHaveLength(2);
+    expect(questions[1]!.text).toBe('And how is it different from a semaphore?');
+  });
+
   it('uses a fresh key per utterance', () => {
     const { d, questions } = make();
     d.interim('what is a mutex', 100);
     vi.advanceTimersByTime(350);
     d.final('What is a mutex?', 500);
-    d.interim('and how is it different from a semaphore', 1000);
+    vi.advanceTimersByTime(2000); // beyond the 1.5 s merge window
+    d.interim('and how is it different from a semaphore', 3000);
     vi.advanceTimersByTime(350);
     expect(questions).toHaveLength(2);
     expect(questions[0]!.key).not.toBe(questions[1]!.key);

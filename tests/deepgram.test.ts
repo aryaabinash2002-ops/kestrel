@@ -26,7 +26,7 @@ describe('DeepgramTranscriber', () => {
     const q = new URLSearchParams(deepgramQuery({ language: 'en', sampleRate: 16000 }));
     expect(q.get('model')).toBe('nova-3');
     expect(q.get('interim_results')).toBe('true');
-    expect(q.get('endpointing')).toBe('300');
+    expect(q.get('endpointing')).toBe('200'); // tuned down from the spec's 300 ms (finals ~300 ms sooner; short pauses are merged by the detector)
     expect(q.get('utterance_end_ms')).toBe('1000');
     expect(q.get('smart_format')).toBe('true');
     expect(q.get('punctuate')).toBe('true');

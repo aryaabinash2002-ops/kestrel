@@ -96,6 +96,8 @@ export interface AnswerCard {
   error?: string;
   latency: AnswerLatency;
   kind: 'auto' | 'manual' | 'chat' | 'smalltalk';
+  /** Headline/points carried over from a cancelled speculative answer while the restart streams. */
+  stale?: boolean;
   createdAt: number;
 }
 

@@ -80,7 +80,9 @@ export class LLMService {
     system: Anthropic.TextBlockParam[],
   ): Promise<{ cacheWrite: number; cacheRead: number } | null> {
     try {
+      const tc = Date.now();
       const client = await this.getClient();
+      log.debug(`client ready in ${Date.now() - tc} ms`);
       const t0 = Date.now();
       const res = await client.messages.create({
         model,

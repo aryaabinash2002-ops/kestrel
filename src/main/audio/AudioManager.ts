@@ -53,6 +53,9 @@ export class AudioManager extends EventEmitter {
   private resolvedSystemMode: AudioState['resolvedSystemMode'] = null;
   private extensionCapturing = false;
   private lastLevelEmit: Record<Channel, number> = { ME: 0, THEM: 0 };
+  private lastLoudAt: Record<Channel, number> = { ME: 0, THEM: 0 };
+  /** Meter level above which a channel counts as "speaking" (dBFS-mapped 0..1; speech ≈ 0.4–0.8). */
+  static readonly SPEAKING_LEVEL = 0.28;
   private ready: Promise<void>;
   private readyResolve!: () => void;
 
@@ -139,6 +142,7 @@ export class AudioManager extends EventEmitter {
     switch (ev.type) {
       case 'level': {
         const now = Date.now();
+        if (ev.level >= AudioManager.SPEAKING_LEVEL) this.lastLoudAt[ev.channel] = now;
         if (now - this.lastLevelEmit[ev.channel] < 60 && ev.level > 0) return;
         this.lastLevelEmit[ev.channel] = now;
         emit('audio:level', { channel: ev.channel, level: ev.level, ts: now });
@@ -198,6 +202,12 @@ export class AudioManager extends EventEmitter {
     return this.withCaptureVisible(() => this.request<AudioDevices>({ type: 'listDevices' }));
   }
 
+  /** Milliseconds since the channel was last above the speaking level (Infinity if never). */
+  silenceMs(channel: Channel): number {
+    const t = this.lastLoudAt[channel];
+    return t ? Date.now() - t : Number.POSITIVE_INFINITY;
+  }
+
   /** Extension bridge reports whether the Meet tab is streaming audio to us. */
   setExtensionCapturing(flag: boolean): void {
     if (this.extensionCapturing === flag) return;
@@ -232,7 +242,9 @@ export class AudioManager extends EventEmitter {
       }
       const rms = Math.sqrt(sumSq / Math.max(1, n));
       const db = 20 * Math.log10(Math.max(rms, 1e-6));
-      emit('audio:level', { channel, level: Math.min(1, Math.max(0, (db + 50) / 40)), ts: now });
+      const lvl = Math.min(1, Math.max(0, (db + 50) / 40));
+      if (lvl >= AudioManager.SPEAKING_LEVEL) this.lastLoudAt[channel] = now;
+      emit('audio:level', { channel, level: lvl, ts: now });
     }
   }
 
@@ -386,6 +398,9 @@ export class AudioManager extends EventEmitter {
         });
       } else if (msg.includes('no-system-audio')) {
         this.them.error = 'No system audio track';
+      } else if (/Invalid capture constraints|AbortError/.test(msg)) {
+        this.them.error =
+          'No screen source for system audio (screen locked, or Screen Recording denied) — retry or use the Meet extension';
       } else {
         this.them.error = msg.replace(/^NotAllowedError: /, 'Blocked: ');
       }

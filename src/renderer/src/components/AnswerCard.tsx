@@ -131,7 +131,13 @@ export function AnswerCard({
           </p>
         )}
         {!collapsed && !isChat && card.points.length > 0 && (
-          <ul className={cn('mt-1.5 space-y-1 pl-4', compact ? 'text-xs' : 'text-[13px]')}>
+          <ul
+            className={cn(
+              'mt-1.5 space-y-1 pl-4',
+              compact ? 'text-xs' : 'text-[13px]',
+              card.stale && 'opacity-60',
+            )}
+          >
             {card.points.map((p, i) => (
               <li
                 key={i}

@@ -98,7 +98,13 @@ function applyAnswerEvent(ev: AnswerEvent): void {
       useSession.setState({
         cards: s.cards.map((c) =>
           c.id === ev.id
-            ? { ...c, headline: ev.headline, points: ev.points, content: ev.content }
+            ? {
+                ...c,
+                headline: ev.headline,
+                points: ev.points,
+                content: ev.content,
+                stale: ev.stale,
+              }
             : c,
         ),
       });

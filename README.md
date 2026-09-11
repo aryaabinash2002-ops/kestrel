@@ -77,10 +77,10 @@ Native modules are N-API (`better-sqlite3` ships prebuilt binaries for every pla
 |---|-----------|--------|
 | 1 | Skeleton: Electron + React + TS + Tailwind, typed IPC, keychain settings, SQLite | ✅ |
 | 2 | Audio capture (mic + system audio), device pickers, level meters | ✅ macOS verified; Windows untested |
-| 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (fake-server tests; real-key run pending) |
+| 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (real Deepgram run verified, echo filter confirmed on speakers) |
 | 4 | Google Meet Chrome extension | ✅ (bridge E2E with simulated extension; real Meet call pending) |
-| 5 | LLM answers, prompt caching, warm connection, latency logging | ✅ (verified against a fake Anthropic server; real-key run pending) |
-| 6 | Instant auto-answering (speculative, parallel classifier) | ✅ (E2E with audio fixture + fake servers; tuning on a real Meet call pending) |
+| 5 | LLM answers, prompt caching, warm connection, latency logging | ✅ (real Claude run: answers grounded in the résumé; screenshot solve, review and practice scoring verified) |
+| 6 | Instant auto-answering (speculative, parallel classifier) | ✅ (real Deepgram + Claude run: 1.2–1.7 s first token after the last word from the UAE; see ARCHITECTURE tuning notes) |
 | 7 | Profiles: résumé/JD upload and parsing, story bank, "Test with Meet" | ✅ |
 | 8 | Screenshot solve | ✅ (full-screen path smoke-tested; region overlay needs a manual drag) |
 | 9 | Follow-up chat box | ✅ |

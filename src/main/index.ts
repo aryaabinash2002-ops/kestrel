@@ -68,6 +68,7 @@ async function boot(): Promise<void> {
   const settings = new SettingsStore(paths.settingsFile);
   const secrets = new SecretStore(paths.secretsFile);
   await secrets.init();
+  void secrets.preload();
   const db = new SessionDB(paths.dbFile);
   const windows = new WindowManager(() => settings.get());
   const hotkeys = new HotkeyManager();
@@ -92,6 +93,7 @@ async function boot(): Promise<void> {
     answers,
     new Classifier(llm, () => settings.get()),
     () => settings.get(),
+    audio,
   );
   const screenshots = new ScreenshotService({
     llm,
@@ -144,20 +146,32 @@ async function boot(): Promise<void> {
   // getDisplayMedia({ audio: true, video: true }) and immediately drops the video track.
   session.defaultSession.setDisplayMediaRequestHandler(
     (_request, callback) => {
+      // The callback may only be invoked once; an empty grant makes the renderer's
+      // getDisplayMedia reject, which AudioManager reports as a permission/no-source error.
+      let answered = false;
+      const answer = (streams: Parameters<typeof callback>[0]) => {
+        if (answered) return;
+        answered = true;
+        try {
+          callback(streams);
+        } catch (err) {
+          log.warn('display media callback rejected', err);
+        }
+      };
       desktopCapturer
         .getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } })
         .then((sources) => {
           const first = sources[0];
           if (!first) {
-            log.warn('no screen sources for loopback');
-            callback({});
+            log.warn('no screen sources for loopback (screen locked or Screen Recording denied?)');
+            answer({});
             return;
           }
-          callback({ video: first, audio: 'loopback' });
+          answer({ video: first, audio: 'loopback' });
         })
         .catch((err) => {
           log.error('display media handler failed', err);
-          callback({});
+          answer({});
         });
     },
     { useSystemPicker: false },

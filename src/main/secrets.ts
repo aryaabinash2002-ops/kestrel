@@ -48,16 +48,38 @@ export class SecretStore {
     return this.backend;
   }
 
+  private inflight = new Map<SecretKey, Promise<string | null>>();
+
   async get(key: SecretKey): Promise<string | null> {
     if (this.cache.has(key)) return this.cache.get(key) ?? null;
-    let value: string | null = null;
-    if (this.keytar) {
-      value = await this.keytar.getPassword(SERVICE, key);
-    } else if (this.backend === 'safeStorage') {
-      value = this.readFallback()[key] ?? null;
+    // Coalesce concurrent first reads so the keychain is hit once.
+    const pending = this.inflight.get(key);
+    if (pending) return pending;
+    const p = (async () => {
+      const t0 = Date.now();
+      let value: string | null = null;
+      if (this.keytar) {
+        value = await this.keytar.getPassword(SERVICE, key);
+      } else if (this.backend === 'safeStorage') {
+        value = this.readFallback()[key] ?? null;
+      }
+      this.cache.set(key, value);
+      const ms = Date.now() - t0;
+      if (ms > 250) log.warn(`keychain read for ${key} took ${ms} ms`);
+      else log.debug(`keychain read for ${key} in ${ms} ms`);
+      return value;
+    })();
+    this.inflight.set(key, p);
+    try {
+      return await p;
+    } finally {
+      this.inflight.delete(key);
     }
-    this.cache.set(key, value);
-    return value;
+  }
+
+  /** Read all keys once at startup so the first LLM/STT request never waits on the keychain. */
+  async preload(): Promise<void> {
+    await Promise.all((['anthropic', 'deepgram', 'assemblyai'] as SecretKey[]).map((k) => this.get(k)));
   }
 
   async set(key: SecretKey, value: string): Promise<void> {

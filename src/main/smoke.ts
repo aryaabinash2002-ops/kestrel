@@ -62,7 +62,8 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
         };
         if (process.env['KESTREL_SMOKE_SESSION']) {
           // Start a live session + capture so the Live screen shows its running state.
-          ctx.sessions.start(null, 'live');
+          const demo = ctx.db.listProfiles().find((p) => p.name.includes('(demo)'));
+          ctx.sessions.start(demo?.id ?? null, 'live');
           await ctx.audio.start().catch((err) => (summary['audioError'] = String(err)));
           ctx.sessions.setListening(true);
           await new Promise((r) =>
@@ -82,10 +83,9 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
               isFinal: true,
               source: 'stt',
             });
+            await new Promise((r) => setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_WAIT_MS'] ?? 0)));
             ctx.answers.answerNow();
-            await new Promise((r) =>
-              setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_MS'] ?? 4000)),
-            );
+            await new Promise((r) => setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_MS'] ?? 4000)));
             summary['cards'] = ctx.answers.current();
           }
           if (process.env['KESTREL_SMOKE_CHAT']) {
@@ -96,7 +96,7 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
           if (process.env['KESTREL_SMOKE_SCREENSHOT']) {
             try {
               await ctx.screenshots.solve({ region: false });
-              await new Promise((r) => setTimeout(r, 2500));
+              await new Promise((r) => setTimeout(r, Number(process.env['KESTREL_SMOKE_SCREENSHOT_MS'] ?? 2500)));
               summary['screenshots'] = ctx.sessions.session
                 ? ctx.db.listScreenshots(ctx.sessions.session.id)
                 : [];
@@ -108,10 +108,38 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
             transcription: ctx.transcription.states(),
             audio: ctx.audio.state(),
             utterances: ctx.sessions.finals().length,
+            transcript: ctx.sessions.finals().map((u) => ({ speaker: u.speaker, text: u.text, startMs: u.startMs, endMs: u.endMs })),
           };
           if (process.env['KESTREL_SMOKE_KEEP_SESSION'] !== '1') {
+            const endedId = ctx.sessions.session?.id ?? null;
             await ctx.audio.stop();
             ctx.sessions.stop();
+            if (process.env['KESTREL_SMOKE_REVIEW'] && endedId) {
+              try {
+                const t0 = Date.now();
+                const review = await ctx.review.generate(endedId);
+                const exported = await ctx.review.export(endedId, 'md');
+                summary['review'] = { ms: Date.now() - t0, review, exported };
+              } catch (err) {
+                summary['reviewError'] = String(err);
+              }
+            }
+          }
+          if (process.env['KESTREL_SMOKE_PRACTICE']) {
+            try {
+              const st = await ctx.practice.start({ profileId: null, setId: 'behavioral', count: 1, useTts: false });
+              const sid = st.session?.id ?? '';
+              await new Promise((r) => setTimeout(r, 800));
+              const t0 = Date.now();
+              await ctx.practice.submit(
+                'Sure. I am a senior engineer with seven years in payments. At Globex I led the billing migration to Stripe: we phased the rollout over one quarter, ran dual writes, and cut payment failures from twelve percent to one percent, recovering about 1.2 million dollars a year.',
+              );
+              for (let i = 0; i < 60 && ctx.db.listPracticeScores(sid).length === 0; i++) await new Promise((r) => setTimeout(r, 250));
+              summary['practice'] = { ms: Date.now() - t0, scores: ctx.db.listPracticeScores(sid) };
+              await ctx.practice.stop();
+            } catch (err) {
+              summary['practiceError'] = String(err);
+            }
           }
         }
         if (process.env['KESTREL_SMOKE_AUDIO']) {

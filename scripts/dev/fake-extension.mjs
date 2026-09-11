@@ -1,5 +1,5 @@
 // Simulates the Chrome extension against a running Kestrel app (dev tool + smoke check).
-// Usage: node scripts/dev/fake-extension.mjs [--leave-after ms] [--audio-file pcm16-16k.raw]
+// Usage: node scripts/dev/fake-extension.mjs [--leave-after ms] [--audio-file pcm16-16k.raw] [--db path/to/kestrel.db] [--port 47600]
 import WebSocket from 'ws';
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
@@ -14,7 +14,7 @@ const opt = (name, def) => {
 const leaveAfter = Number(opt('--leave-after', '0'));
 const audioFile = opt('--audio-file', '');
 const port = Number(opt('--port', process.env.KESTREL_EXT_PORT ?? '47600'));
-const db = join(homedir(), 'Library/Application Support/kestrel/data/kestrel.db');
+const db = opt('--db', join(homedir(), 'Library/Application Support/kestrel/data/kestrel.db'));
 
 function readToken() {
   try {

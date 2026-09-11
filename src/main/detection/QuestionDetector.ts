@@ -65,10 +65,125 @@ export interface QuestionUpdate extends DetectedQuestion {
 }
 
 export interface DetectorOptions {
-  /** Interim text must be unchanged for this long before a speculative start. */
+  /** Interim text must be unchanged for this long before a speculative start (complete-looking text). */
   stableMs?: number;
+  /** Stability required when the interim ends mid-clause (article, preposition, auxiliary…). */
+  stableMsIncomplete?: number;
   /** Overlap at/above which the final is considered "the same question". */
   sameThreshold?: number;
+  /** A new utterance starting within this window continues the previous question (§5.2.4). */
+  mergeWindowMs?: number;
+  /** Returns true while the other party is still audibly speaking (speculation is deferred). */
+  stillSpeaking?: () => boolean;
+}
+
+/** Words a question rarely ends on: the speaker is almost certainly mid-clause. */
+const INCOMPLETE_ENDINGS = new Set([
+  'a',
+  'an',
+  'the',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'of',
+  'to',
+  'in',
+  'on',
+  'for',
+  'with',
+  'at',
+  'by',
+  'from',
+  'your',
+  'my',
+  'our',
+  'their',
+  'his',
+  'her',
+  'its',
+  'and',
+  'or',
+  'but',
+  'that',
+  'this',
+  'these',
+  'those',
+  'what',
+  'how',
+  'when',
+  'where',
+  'which',
+  'who',
+  'why',
+  'you',
+  'can',
+  'could',
+  'would',
+  'should',
+  'do',
+  'did',
+  'does',
+  'have',
+  'has',
+  'had',
+  'me',
+  'us',
+  'about',
+  'through',
+  'into',
+  'if',
+  'as',
+  'so',
+  'very',
+  'most',
+  'some',
+  'any',
+  'more',
+  'like',
+  'um',
+  'uh',
+  'kind',
+  'sort',
+  'tell',
+  'describe',
+  'explain',
+  'give',
+  'walk',
+  'take',
+  'share',
+]);
+
+/** True when `next` contains a content word (≥ 4 letters, not a function word) absent from `prev`. */
+export function addsContentWord(prev: string, next: string): boolean {
+  const had = new Set(normalizeWords(prev));
+  return normalizeWords(next).some(
+    (w) => w.length >= 4 && !INCOMPLETE_ENDINGS.has(w) && !FILLER.has(w) && !had.has(w),
+  );
+}
+
+const FILLER = new Set([
+  'please',
+  'thanks',
+  'thank',
+  'okay',
+  'right',
+  'yeah',
+  'just',
+  'maybe',
+  'really',
+  'actually',
+  'basically',
+  'little',
+  'bit',
+]);
+
+/** True when the text ends on a word that usually has more to come. */
+export function endsMidClause(text: string): boolean {
+  const words = normalizeWords(text);
+  const last = words[words.length - 1];
+  return !!last && INCOMPLETE_ENDINGS.has(last) && !/\?\s*$/.test(text);
 }
 
 /**
@@ -79,46 +194,91 @@ export interface DetectorOptions {
  */
 export class QuestionDetector extends EventEmitter {
   private stableMs: number;
+  private stableMsIncomplete: number;
   private sameThreshold: number;
+  private stillSpeaking: () => boolean;
+  private mergeWindowMs: number;
+  private deferrals = 0;
   private timer: NodeJS.Timeout | null = null;
   private pendingText = '';
   private pendingEndTs = 0;
   private utteranceKey: string | null = null;
   private emittedText: string | null = null;
   private seq = 0;
+  /** Text of the previous finalised utterance, so a short pause does not split one question in two. */
+  private lastFinal: { key: string; text: string; at: number; emitted: string | null } | null =
+    null;
+  private prefix = '';
 
   constructor(opts: DetectorOptions = {}) {
     super();
-    this.stableMs = opts.stableMs ?? 350;
+    this.stableMs = opts.stableMs ?? 200;
+    this.stableMsIncomplete = opts.stableMsIncomplete ?? 600;
     this.sameThreshold = opts.sameThreshold ?? 0.8;
+    this.stillSpeaking = opts.stillSpeaking ?? (() => false);
+    this.mergeWindowMs = opts.mergeWindowMs ?? 1500;
   }
 
   /** Feed the running text of the current THEM utterance (finals-so-far + interim). */
   interim(text: string, lastWordWallMs: number): void {
-    const t = text.trim();
-    if (!t) return;
-    if (!this.utteranceKey) this.utteranceKey = `q${++this.seq}`;
+    const raw = text.trim();
+    if (!raw) return;
+    if (!this.utteranceKey) this.startUtterance();
+    const t = (this.prefix + raw).trim();
     if (t === this.pendingText) return; // no new words: keep the stability timer running
     this.pendingText = t;
     this.pendingEndTs = lastWordWallMs;
     if (this.timer) clearTimeout(this.timer);
+    // A pause after "…walk me through a" is not the end of the question; wait longer there.
+    const wait = endsMidClause(t) ? this.stableMsIncomplete : this.stableMs;
+    this.deferrals = 0;
+    this.armStableTimer(wait);
+  }
+
+  /** Fire once the text is stable AND the speaker has gone quiet (interim gaps ≠ silence). */
+  private armStableTimer(wait: number): void {
     this.timer = setTimeout(() => {
       this.timer = null;
+      if (this.stillSpeaking() && this.deferrals < 8) {
+        this.deferrals++;
+        this.armStableTimer(120);
+        return;
+      }
       this.consider(this.pendingText, this.pendingEndTs, true);
-    }, this.stableMs);
+    }, wait);
   }
 
   /** The utterance finalised with this text. */
   final(text: string, lastWordWallMs: number): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    const t = text.trim();
+    if (!this.utteranceKey) this.startUtterance();
+    const t = (this.prefix + text.trim()).trim();
     const key = this.utteranceKey ?? `q${++this.seq}`;
     if (t) this.consider(t, lastWordWallMs, false);
     else if (this.emittedText) this.emit('statement', { key });
+    this.lastFinal = t ? { key, text: t, at: Date.now(), emitted: this.emittedText } : null;
     this.utteranceKey = null;
     this.emittedText = null;
     this.pendingText = '';
+    this.prefix = '';
+  }
+
+  /**
+   * Begin a new utterance. If the previous one finalised less than `mergeWindowMs` ago it is
+   * treated as the same question ("Tell me about a time you failed" … "and what did you learn?"):
+   * the texts are merged and a running answer for it is restarted rather than duplicated.
+   */
+  private startUtterance(): void {
+    const lf = this.lastFinal;
+    if (lf && Date.now() - lf.at < this.mergeWindowMs) {
+      this.utteranceKey = lf.key;
+      this.prefix = lf.text + ' ';
+      this.emittedText = lf.emitted;
+    } else {
+      this.utteranceKey = `q${++this.seq}`;
+      this.prefix = '';
+    }
   }
 
   reset(): void {
@@ -127,6 +287,8 @@ export class QuestionDetector extends EventEmitter {
     this.utteranceKey = null;
     this.emittedText = null;
     this.pendingText = '';
+    this.prefix = '';
+    this.lastFinal = null;
   }
 
   private consider(text: string, endTs: number, speculative: boolean): void {
@@ -160,7 +322,9 @@ export class QuestionDetector extends EventEmitter {
       return;
     }
     const overlap = wordOverlap(this.emittedText, text);
-    const restart = overlap < this.sameThreshold;
+    // ≥ 80 % overlap keeps the running answer — unless the new text adds a content word the
+    // answer never saw ("…your biggest" → "…your biggest weakness?"), which changes the question.
+    const restart = overlap < this.sameThreshold || addsContentWord(this.emittedText, text);
     if (restart) this.emittedText = text;
     this.emit('update', {
       key,

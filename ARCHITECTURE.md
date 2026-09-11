@@ -99,6 +99,20 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * `practice/PracticeService.ts` runs a session with `mode: 'practice'` (so `AutoAnswer` stays off) and `audio.start({ them: false })` — microphone only, so the TTS interviewer is never captured as THEM. It pushes `practice:event`s: `question {index,total,question,category}` → the renderer speaks it with the Web Speech API (`components/practice/tts.ts`) and collects the answer from ME finals whose `startMs` is after the question was shown (editable before submit) → `practice:submit(text)` → `scoring` → `llm.json` with the `practice_scorer` template and `SCORE_SCHEMA` (exact mirror of `PracticeScore['score']`, values clamped to 1–10) → `db.savePracticeScore` → `score` → the next `question` is emitted immediately (the renderer parks it until *Next*) → `finished` stops audio and ends the session.
 * `history(profileId)` folds `practice_scores` per practice session into `PracticeHistoryEntry` (count, average); the Practice screen shows setup, the live question/answer view (mic meter, interim text), the score card (overall + four sub-scores, strengths, "improve one thing", collapsible model answer), a results summary and per-profile progress. Deep link for smoke tests: `#/practice?start=<set>&count=N&tts=0|1[&autosubmit=1]`.
 
+## Real-API tuning notes (2026-09-11, macOS, Deepgram Nova-3 + Claude Haiku 4.5, measured from the UAE)
+
+Spoken questions (macOS `say`) played through the speakers, captured by loopback, transcribed by Deepgram, auto-detected and answered:
+
+| Stage | Typical |
+|---|---|
+| Interim containing the last word arrives | ~300 ms after it is spoken |
+| Final (`speech_final`) arrives | ~500–650 ms with `endpointing=200` (~800 ms with 300) |
+| Haiku 4.5 first token after the request starts | 670–990 ms (varies with API load; ~750 ms warm) |
+| First token after the question's last word (non-speculative) | 1.2–1.7 s |
+| p95 | < 2.0 s (one 2.4 s outlier during a slow API response) |
+
+Tuning that came out of these runs: (1) speculation is gated on the THEM audio actually going quiet (`AudioManager.silenceMs`) and waits longer when the interim ends mid-clause (`endsMidClause`), because Deepgram's interim cadence has gaps that look like pauses; (2) a final that adds a *content word* ("…your biggest" → "…your biggest weakness?") restarts even at ≥ 80 % overlap, otherwise the answer is for the wrong question; (3) an utterance that starts within 1.5 s of the previous final is merged into the same question (two-part questions, short pauses) so `endpointing` could be lowered to 200 ms; (4) on restart the previous headline stays on screen dimmed until the new one streams in. The ≤ 1.0 s p50 target needs the answer to start before the question ends, which happens only when the interim already contains the last content word; from a region with ~200 ms RTT to the API the floor for a post-question start is ≈ 0.5 s (final) + 0.7 s (first token).
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

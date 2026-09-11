@@ -25,7 +25,7 @@ const log = logger.scope('auto');
  * label the card. Nothing here waits for a final transcript.
  */
 export class AutoAnswer {
-  readonly detector = new QuestionDetector();
+  readonly detector: QuestionDetector;
   private classifyController: AbortController | null = null;
   /** card id per detector key, so finals/restarts address the right card */
   private cardByKey = new Map<string, string>();
@@ -40,7 +40,11 @@ export class AutoAnswer {
     private engine: AnswerEngine,
     private classifier: Classifier,
     private getSettings: () => Settings,
+    audio?: { silenceMs(channel: 'THEM'): number },
   ) {
+    this.detector = new QuestionDetector({
+      stillSpeaking: () => (audio ? audio.silenceMs('THEM') < 220 : false),
+    });
     transcription.on('interim', (e: InterimEvent) => {
       if (e.channel === 'THEM') this.detector.interim(e.text, e.lastWordWallMs);
     });
@@ -85,13 +89,14 @@ export class AutoAnswer {
     const cardId = this.cardByKey.get(u.key);
     if (!u.restart) {
       // Same question confirmed by the final: keep the running answer, fix the end timestamp.
-      if (cardId && !u.speculative) this.engine.updateQuestionEnd(cardId, u.questionEndTs);
+      if (cardId && !u.speculative) this.engine.updateQuestionEnd(cardId, u.questionEndTs, u.text);
       return;
     }
     log.debug(`restart (overlap ${u.overlap.toFixed(2)}):`, u.text);
     emit('question:detected', { text: u.text, speculative: u.speculative, ts: u.questionEndTs });
-    const active = this.engine.activeQuestion();
-    const restartOf = cardId && active?.id === cardId ? cardId : undefined;
+    // Replace the card in place whether it is still streaming or already finished, so a
+    // question that grew ("…and what was the result?") never produces two cards.
+    const restartOf = cardId ?? undefined;
     this.engine.requestAuto({
       question: u.text,
       kind: 'auto',
