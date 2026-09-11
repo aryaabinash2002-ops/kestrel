@@ -6,7 +6,16 @@
 import type { AppToExtensionMessage, ExtensionToAppMessage } from '@shared/types/extension';
 import type { ExtMessage, ExtStatus } from './protocol';
 
-const VERSION = chrome.runtime.getManifest().version;
+// Offscreen documents only expose chrome.runtime messaging; getManifest() is not available here.
+const VERSION = (() => {
+  try {
+    return typeof chrome.runtime.getManifest === 'function'
+      ? chrome.runtime.getManifest().version
+      : '0.1.0';
+  } catch {
+    return '0.1.0';
+  }
+})();
 const SAMPLE_RATE = 16000;
 
 let ws: WebSocket | null = null;
