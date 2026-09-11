@@ -38,6 +38,16 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
       notes: 'Emphasise ownership and mentoring.',
     });
   }
+  // Dev: store API keys from the environment through the app's own SecretStore so the
+  // keychain items are owned by this app (no macOS password prompts on later reads).
+  for (const [env, key] of [
+    ['KESTREL_SMOKE_SET_ANTHROPIC', 'anthropic'],
+    ['KESTREL_SMOKE_SET_DEEPGRAM', 'deepgram'],
+    ['KESTREL_SMOKE_SET_ASSEMBLYAI', 'assemblyai'],
+  ] as const) {
+    const v = process.env[env];
+    if (v) void ctx.secrets.set(key, v).then(() => log.info(`stored ${key} key from env`));
+  }
   if (process.env['KESTREL_SMOKE_SETTINGS']) {
     try {
       ctx.settings.set(JSON.parse(process.env['KESTREL_SMOKE_SETTINGS']));

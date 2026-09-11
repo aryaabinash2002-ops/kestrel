@@ -21,13 +21,12 @@ export const useSettings = create<SettingsState>((set) => ({
   secrets: { anthropic: false, deepgram: false, assemblyai: false },
   secretBackend: 'keychain',
   load: async () => {
-    const [settings, appInfo, secrets, secretBackend] = await Promise.all([
-      invoke('settings:get'),
-      invoke('app:info'),
-      invoke('secrets:status'),
-      invoke('secrets:backend'),
-    ]);
-    set({ settings, appInfo, secrets, secretBackend, loaded: true });
+    // Render as soon as settings are known; keychain reads can be slow or show an OS prompt.
+    const [settings, appInfo] = await Promise.all([invoke('settings:get'), invoke('app:info')]);
+    set({ settings, appInfo, loaded: true });
+    void Promise.all([invoke('secrets:status'), invoke('secrets:backend')])
+      .then(([secrets, secretBackend]) => set({ secrets, secretBackend }))
+      .catch(() => undefined);
   },
   update: async (patch) => {
     const next = await invoke('settings:set', patch);
