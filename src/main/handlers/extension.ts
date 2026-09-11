@@ -1,5 +1,5 @@
 import { app, shell } from 'electron';
-import { existsSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AppContext } from '../context';
 import { emit, handle } from '../ipc';
@@ -9,10 +9,35 @@ const log = logger.scope('extension');
 
 const SELF_NAMES = new Set(['you', 'tú', 'vous', 'du', 'você', 'あなた', 'आप', 'me']);
 
-export function extensionFolder(): string {
+/** Source of the bundled extension (inside the app bundle when packaged). */
+function bundledExtensionFolder(): string {
   if (app.isPackaged) return join(process.resourcesPath, 'extension');
   const dist = join(app.getAppPath(), 'extension', 'dist');
   return existsSync(dist) ? dist : join(app.getAppPath(), 'extension');
+}
+
+/**
+ * Folder to point Chrome's "Load unpacked" at. The macOS file picker cannot browse into an
+ * .app bundle, so the bundled extension is copied to a plain folder in the user-data dir
+ * (refreshed whenever the bundled copy is newer).
+ */
+export function extensionFolder(userData: string): string {
+  const src = bundledExtensionFolder();
+  const dest = join(userData, 'extension');
+  try {
+    const srcManifest = join(src, 'manifest.json');
+    const destManifest = join(dest, 'manifest.json');
+    const stale =
+      !existsSync(destManifest) || statSync(srcManifest).mtimeMs > statSync(destManifest).mtimeMs;
+    if (stale) {
+      mkdirSync(dest, { recursive: true });
+      cpSync(src, dest, { recursive: true });
+    }
+    return dest;
+  } catch (err) {
+    log.warn('could not stage the extension folder', err);
+    return src;
+  }
 }
 
 export function registerExtensionHandlers(ctx: AppContext): void {
@@ -25,7 +50,7 @@ export function registerExtensionHandlers(ctx: AppContext): void {
     return bridge.pairing();
   });
   handle('extension:openFolder', async () => {
-    const dir = extensionFolder();
+    const dir = extensionFolder(ctx.paths.userData);
     await shell.openPath(dir);
     return dir;
   });
