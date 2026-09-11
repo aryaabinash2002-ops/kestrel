@@ -107,8 +107,10 @@ export function AnswerCard({
           className={cn(
             'font-semibold leading-snug',
             compact ? 'text-[13px]' : 'text-[15px]',
-            streaming && !card.latency.headlineDoneTs && 'caret',
+            streaming && !card.latency.headlineDoneTs && !card.stale && 'caret',
+            card.stale && 'opacity-60',
           )}
+          title={card.stale ? 'Updating for the full question…' : undefined}
         >
           {card.headline ||
             (streaming ? (
