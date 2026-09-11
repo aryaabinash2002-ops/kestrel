@@ -86,9 +86,11 @@ $('save').addEventListener('click', async () => {
         ? '✓ Connected'
         : s.connection === 'bad-token'
           ? '✗ Wrong token'
-          : '✗ Kestrel not reachable';
+          : s.lastError
+            ? '✗ ' + s.lastError
+            : '✗ Kestrel not reachable — is the app running? (reload the extension after updating it)';
     render(s);
-  }, 1200);
+  }, 2500);
 });
 
 void init();
