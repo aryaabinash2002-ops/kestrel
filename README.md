@@ -27,7 +27,7 @@ Useful scripts: `npm run typecheck`, `npm run lint`, `npm test`, `npm run packag
 |---|-----------|--------|
 | 1 | Skeleton: Electron + React + TS + Tailwind, typed IPC, keychain settings, SQLite | ✅ |
 | 2 | Audio capture (mic + system audio), device pickers, level meters | ✅ macOS verified; Windows untested |
-| 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ⏳ |
+| 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (fake-server tests; real-key run pending) |
 | 4 | Google Meet Chrome extension | ⏳ |
 | 5 | LLM answers, prompt caching, warm connection, latency logging | ⏳ |
 | 6 | Instant auto-answering (speculative, parallel classifier) | ⏳ |

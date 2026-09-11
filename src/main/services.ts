@@ -2,6 +2,7 @@ import type { AppContext } from './context';
 import { handle } from './ipc';
 import { registerSessionHandlers } from './handlers/session';
 import { registerAudioHandlers } from './handlers/audio';
+import { registerTranscriptionHandlers } from './handlers/transcription';
 
 /**
  * Boots the feature services (audio, transcription, LLM, extension server, …)
@@ -10,9 +11,9 @@ import { registerAudioHandlers } from './handlers/audio';
 export async function bootServices(ctx: AppContext): Promise<void> {
   registerSessionHandlers(ctx);
   registerAudioHandlers(ctx);
+  registerTranscriptionHandlers(ctx);
 
   // Placeholders replaced by real services in later milestones.
-  handle('transcript:state', () => []);
   handle('extension:state', () => ({
     status: 'off',
     clientName: null,
@@ -23,6 +24,6 @@ export async function bootServices(ctx: AppContext): Promise<void> {
   }));
   handle('extension:pairing', () => ({ port: ctx.settings.get().extensionPort, token: 'not-ready', url: '' }));
   handle('answer:current', () => []);
-  handle('diagnostics:get', () => ({ latency: ctx.db.listLatency(), transcriberStats: [], speculativeRestartRate: 0 }));
+  handle('diagnostics:get', () => ({ latency: ctx.db.listLatency(), transcriberStats: ctx.transcription.statsSnapshot(), speculativeRestartRate: 0 }));
   handle('diagnostics:clear', () => ctx.db.clearLatency());
 }

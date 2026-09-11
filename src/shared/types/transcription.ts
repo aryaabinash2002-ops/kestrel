@@ -1,12 +1,6 @@
 import type { Channel } from './session';
 
-export type TranscriberStatus =
-  | 'idle'
-  | 'connecting'
-  | 'open'
-  | 'reconnecting'
-  | 'closed'
-  | 'error';
+export type TranscriberStatus = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed' | 'error';
 
 export interface TranscriptionState {
   channel: Channel;
@@ -16,17 +10,30 @@ export interface TranscriptionState {
   reconnectAttempt?: number;
 }
 
+export interface TranscriptWord {
+  word: string;
+  startWallMs: number;
+  endWallMs: number;
+}
+
+/** One transcription result (interim or final) with provider audio time mapped to wall-clock ms. */
 export interface TranscriptResult {
   channel: Channel;
   text: string;
   isFinal: boolean;
-  /** Provider-side audio time (seconds) of the first word. */
-  start: number;
-  /** Provider-side audio time (seconds) of the last word end. */
-  end: number;
-  /** Wall-clock ts (ms) when this result was received. */
-  receivedAt: number;
-  /** True when the provider signalled end of utterance (endpointing). */
+  /** Provider signalled end of utterance (endpointing). */
   speechFinal: boolean;
-  words?: { word: string; start: number; end: number }[];
+  startWallMs: number;
+  endWallMs: number;
+  /** Wall-clock ms when this result was received. */
+  receivedAt: number;
+  words?: TranscriptWord[];
+}
+
+export interface TranscriberStats {
+  channel: Channel;
+  interimCount: number;
+  finalCount: number;
+  avgInterimGapMs: number;
+  reconnects: number;
 }

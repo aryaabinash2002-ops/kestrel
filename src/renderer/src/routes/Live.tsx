@@ -4,6 +4,8 @@ import { Mic, Square } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Kbd } from '@renderer/components/ui/kbd';
 import { ChannelStrip } from '@renderer/components/ChannelStrip';
+import { TranscriptView } from '@renderer/components/TranscriptView';
+import { TranscriptionStatus } from '@renderer/components/TranscriptionStatus';
 import { useAudio } from '@renderer/store/audio';
 import { useSession } from '@renderer/store/session';
 import { useSettings } from '@renderer/store/settings';
@@ -17,6 +19,9 @@ export default function Live() {
   const startAudio = useAudio((s) => s.start);
   const stopAudio = useAudio((s) => s.stop);
   const session = useSession((s) => s.state.session);
+  const utterances = useSession((s) => s.utterances);
+  const interim = useSession((s) => s.interim);
+  const transcription = useAudio((s) => s.transcription);
   const profile = useSession((s) => s.state.profile);
   const startSession = useSession((s) => s.start);
   const stopSession = useSession((s) => s.stop);
@@ -83,7 +88,8 @@ export default function Live() {
         <ChannelStrip status={audio?.me ?? null} level={levels.ME} compact={compact} />
         <ChannelStrip status={audio?.them ?? null} level={levels.THEM} compact={compact} />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <TranscriptionStatus states={transcription} listening={listening} />
+      <div className="flex min-h-0 flex-1 flex-col px-3 py-3">
         {!session ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-xs text-muted-foreground">
             <p>Start listening to transcribe both sides of the call.</p>
@@ -98,7 +104,7 @@ export default function Live() {
             </p>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Transcript and answer cards arrive in Milestone 3 and 5.</p>
+          <TranscriptView utterances={utterances} interim={interim} compact={compact} className="flex-1" />
         )}
       </div>
     </div>

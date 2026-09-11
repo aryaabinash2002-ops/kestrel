@@ -35,6 +35,14 @@ This document is kept current as milestones land. Status per milestone is in `RE
   * THEM source resolution (`systemAudioMode`): `auto` prefers the Meet extension when it is streaming, else loopback, else a virtual device.
 * **Panel window.** A normal window with a hidden title bar, optional always-on-top (`floating` level, visible over full-screen apps), opacity, compact mode. It is deliberately *not* excluded from screen capture.
 
+## Transcription (M3)
+
+* `ITranscriber` (`src/main/transcription/ITranscriber.ts`) is the provider interface; `BaseTranscriber` adds status, exponential-backoff reconnect, a 3 s audio replay buffer (audio captured while reconnecting is re-sent), keep-alive when audio pauses, and provider-time → wall-clock mapping (`audioEpochMs` = time of the first chunk on a connection).
+* `DeepgramTranscriber`: `wss://api.deepgram.com/v1/listen` with `model=nova-3&interim_results=true&endpointing=300&utterance_end_ms=1000&smart_format=true&punctuate=true&vad_events=true`, `Authorization: Token …`, binary PCM16 in, `Results`/`UtteranceEnd`/`SpeechStarted` out, `KeepAlive`/`Finalize`/`CloseStream` control messages.
+* `AssemblyAITranscriber`: `wss://streaming.assemblyai.com/v3/ws` (Universal streaming, turn-based; formatted end-of-turn preferred, unformatted used after 400 ms).
+* `TranscriptionService` opens one transcriber per channel when a session starts (sockets are opened before speech begins), builds utterances from segment finals + interim (`speech_final` / `UtteranceEnd` / 2.5 s stale timeout close them), emits `interim`/`final` events for the question detector, persists finals through `SessionManager`, and applies `EchoFilter`: ME finals are held 600 ms and dropped when >70 % similar to THEM text heard in the last 3 s.
+* `KESTREL_STT_ENDPOINT=ws://…` points the app at a local/fake server. `tests/fakes/fakeDeepgram.ts` is a scriptable stand-in used by the tests.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

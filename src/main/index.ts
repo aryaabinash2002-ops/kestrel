@@ -16,6 +16,7 @@ import { bootServices } from "./services";
 import { attachSmokeTest } from "./smoke";
 import { SessionManager } from "./session/SessionManager";
 import { AudioManager } from "./audio/AudioManager";
+import { TranscriptionService } from "./transcription/TranscriptionService";
 
 const log = logger.scope('main');
 
@@ -56,6 +57,7 @@ async function boot(): Promise<void> {
   const hotkeys = new HotkeyManager();
   const sessions = new SessionManager(db);
   const audio = new AudioManager(() => windows.capture, () => settings.get());
+  const transcription = new TranscriptionService(sessions, audio, secrets, () => settings.get());
 
   ctx = {
     paths,
@@ -66,6 +68,7 @@ async function boot(): Promise<void> {
     hotkeys,
     sessions,
     audio,
+    transcription,
     isDev: is.dev,
     version: app.getVersion(),
   };

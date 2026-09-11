@@ -6,6 +6,7 @@ import type { SettingsStore } from './settings';
 import type { WindowManager } from "./windows";
 import type { SessionManager } from "./session/SessionManager";
 import type { AudioManager } from "./audio/AudioManager";
+import type { TranscriptionService } from "./transcription/TranscriptionService";
 
 /**
  * Shared service registry. Services added in later milestones are declared optional
@@ -20,6 +21,7 @@ export interface AppContext {
   hotkeys: HotkeyManager;
   sessions: SessionManager;
   audio: AudioManager;
+  transcription: TranscriptionService;
   isDev: boolean;
   version: string;
 }
