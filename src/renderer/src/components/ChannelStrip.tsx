@@ -1,6 +1,7 @@
 import { AlertTriangle, Mic, Volume2 } from 'lucide-react';
 import type { ChannelStatus } from '@shared/types/audio';
 import { LevelMeter } from './LevelMeter';
+import { useAudio } from '@renderer/store/audio';
 import { cn } from '@renderer/lib/utils';
 
 const WARNING_LABEL: Record<string, string> = {
@@ -8,8 +9,10 @@ const WARNING_LABEL: Record<string, string> = {
   'no-signal': 'No signal',
 };
 
-export function ChannelStrip({ status, level, compact }: { status: ChannelStatus | null; level: number; compact?: boolean }) {
-  const isMe = status?.channel === 'ME' || !status;
+/** Subscribes to its own level so 12 Hz meter updates do not re-render the parent screen. */
+export function ChannelStrip({ status, channel, compact }: { status: ChannelStatus | null; channel: 'ME' | 'THEM'; compact?: boolean }) {
+  const level = useAudio((s) => s.levels[channel]);
+  const isMe = channel === 'ME';
   const Icon = isMe ? Mic : Volume2;
   const tone = isMe ? 'me' : 'them';
   return (

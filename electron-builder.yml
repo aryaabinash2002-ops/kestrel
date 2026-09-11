@@ -14,7 +14,8 @@ extraResources:
   - from: extension/dist
     to: extension
     filter: ['**/*']
-npmRebuild: true
+# better-sqlite3 and keytar are N-API modules with prebuilt binaries; no per-Electron rebuild needed.
+npmRebuild: false
 mac:
   category: public.app-category.productivity
   icon: build/icon.png

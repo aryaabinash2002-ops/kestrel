@@ -59,7 +59,8 @@ export class WindowManager {
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,
-        backgroundThrottling: false,
+        // Throttle timers/animations while hidden (streaming state still arrives over IPC).
+        backgroundThrottling: true,
         spellcheck: false,
       },
     });

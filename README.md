@@ -82,7 +82,7 @@ The extension bundle is copied into the app's resources; *Settings → Audio →
 | 7 | Profiles: résumé/JD upload and parsing, story bank, "Test with Meet" | ✅ |
 | 8 | Screenshot solve | ✅ (full-screen path smoke-tested; region overlay needs a manual drag) |
 | 9 | Follow-up chat box | ✅ |
-| 10 | Post-session review + export | ⏳ |
+| 10 | Post-session review + export | ✅ (Markdown + PDF; generation verified against the fake LLM) |
 | 11 | Practice mode | ⏳ |
 | 12 | Polish | ⏳ |
 | 13 | Packaging | ⏳ |

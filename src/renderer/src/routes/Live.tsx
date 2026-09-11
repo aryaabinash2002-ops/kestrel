@@ -22,7 +22,6 @@ import { cn } from '@renderer/lib/utils';
 
 export default function Live() {
   const audio = useAudio((s) => s.state);
-  const levels = useAudio((s) => s.levels);
   const transcription = useAudio((s) => s.transcription);
   const extension = useAudio((s) => s.extension);
   const startAudio = useAudio((s) => s.start);
@@ -134,8 +133,8 @@ export default function Live() {
         </div>
       </div>
       <div className="shrink-0 space-y-1 px-3 pt-2">
-        <ChannelStrip status={audio?.me ?? null} level={levels.ME} compact />
-        <ChannelStrip status={audio?.them ?? null} level={levels.THEM} compact />
+        <ChannelStrip status={audio?.me ?? null} channel="ME" compact />
+        <ChannelStrip status={audio?.them ?? null} channel="THEM" compact />
       </div>
       <TranscriptionStatus states={transcription} listening={listening} />
       <AudioHints audio={audio} extension={extension} />
