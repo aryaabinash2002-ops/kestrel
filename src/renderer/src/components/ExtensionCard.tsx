@@ -54,8 +54,13 @@ export function ExtensionCard() {
       <CardContent className="space-y-2 text-xs">
         <ol className="list-decimal space-y-1 pl-4 text-muted-foreground">
           <li>
-            Open <code>chrome://extensions</code>, enable Developer mode, click <b>Load unpacked</b>{' '}
-            and choose the extension folder.
+            Click <b>Extension folder</b> below (it opens a plain folder). In Chrome open{' '}
+            <code>chrome://extensions</code>, enable <b>Developer mode</b>, click{' '}
+            <b>Load unpacked</b> and pick that folder.
+          </li>
+          <li>
+            Pin it: click the puzzle-piece icon in Chrome's toolbar and press the pin next to
+            "Kestrel for Google Meet" so its icon stays visible.
           </li>
           <li>Open the Kestrel extension popup and paste the pairing token below.</li>
           <li>Join a Meet call — capture starts automatically when a session is running.</li>
