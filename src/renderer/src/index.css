@@ -139,7 +139,8 @@ body {
   }
 }
 .pulse-dot {
-  animation: pulse-dot 1.4s ease-in-out infinite;
+  /* Stepped so the compositor only repaints twice per cycle instead of every frame. */
+  animation: pulse-dot 1.4s steps(2, jump-none) infinite;
 }
 
 @keyframes card-in {
@@ -170,7 +171,7 @@ body {
   content: '▍';
   margin-left: 1px;
   color: var(--primary);
-  animation: pulse-dot 0.9s ease-in-out infinite;
+  animation: pulse-dot 0.9s steps(2, jump-none) infinite;
 }
 
 .prose-tight p {
