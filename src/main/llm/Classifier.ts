@@ -16,7 +16,17 @@ export const CLASSIFIER_SCHEMA = {
     question: { type: 'string' },
     type: {
       type: 'string',
-      enum: ['behavioral', 'technical', 'system_design', 'coding', 'situational', 'smalltalk', 'factual', 'sales', 'other'],
+      enum: [
+        'behavioral',
+        'technical',
+        'system_design',
+        'coding',
+        'situational',
+        'smalltalk',
+        'factual',
+        'sales',
+        'other',
+      ],
     },
   },
   required: ['is_question', 'question', 'type'],
@@ -30,11 +40,16 @@ export class Classifier {
     private getSettings: () => Settings,
   ) {}
 
-  async classify(fragment: string, context: string[], signal?: AbortSignal): Promise<Classification> {
+  async classify(
+    fragment: string,
+    context: string[],
+    signal?: AbortSignal,
+  ): Promise<Classification> {
     const s = this.getSettings();
     const system = s.prompts.classifier ?? DEFAULT_PROMPTS.classifier;
     const user =
-      (context.length ? `<previous_lines>\n${context.join('\n')}\n</previous_lines>\n` : '') + `<fragment>\n${fragment}\n</fragment>`;
+      (context.length ? `<previous_lines>\n${context.join('\n')}\n</previous_lines>\n` : '') +
+      `<fragment>\n${fragment}\n</fragment>`;
     const out = await this.llm.json<Partial<Classification>>({
       model: s.models.classifier,
       system,
@@ -46,7 +61,8 @@ export class Classifier {
     });
     return {
       is_question: !!out.is_question,
-      question: typeof out.question === 'string' && out.question.trim() ? out.question.trim() : fragment,
+      question:
+        typeof out.question === 'string' && out.question.trim() ? out.question.trim() : fragment,
       type: (out.type as QuestionType) ?? 'other',
     };
   }

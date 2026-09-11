@@ -33,7 +33,9 @@ export function Toaster() {
             />
             <div className="min-w-0 flex-1">
               <div className="font-medium">{t.title}</div>
-              {t.message && <div className="mt-0.5 text-muted-foreground selectable">{t.message}</div>}
+              {t.message && (
+                <div className="mt-0.5 text-muted-foreground selectable">{t.message}</div>
+              )}
             </div>
             <button className="opacity-60 hover:opacity-100" onClick={() => dismiss(t.id)}>
               <X className="size-3.5" />

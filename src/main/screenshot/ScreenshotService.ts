@@ -1,4 +1,11 @@
-import { BrowserWindow, desktopCapturer, ipcMain, screen, type NativeImage, type Rectangle } from 'electron';
+import {
+  BrowserWindow,
+  desktopCapturer,
+  ipcMain,
+  screen,
+  type NativeImage,
+  type Rectangle,
+} from 'electron';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { is } from '@electron-toolkit/utils';
@@ -70,24 +77,43 @@ export class ScreenshotService {
       const region = await this.selectRegion(display.bounds, display.id, image);
       if (!region) return;
       const s = display.scaleFactor;
-      crop = { x: Math.round(region.x * s), y: Math.round(region.y * s), width: Math.round(region.width * s), height: Math.round(region.height * s) };
+      crop = {
+        x: Math.round(region.x * s),
+        y: Math.round(region.y * s),
+        width: Math.round(region.width * s),
+        height: Math.round(region.height * s),
+      };
     }
     const final = crop ? image.crop(crop) : image;
     await this.run(final);
   }
 
-  private async captureDisplay(displayId: number, size: { width: number; height: number }, scale: number): Promise<NativeImage> {
+  private async captureDisplay(
+    displayId: number,
+    size: { width: number; height: number },
+    scale: number,
+  ): Promise<NativeImage> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: { width: Math.round(size.width * scale), height: Math.round(size.height * scale) },
+      thumbnailSize: {
+        width: Math.round(size.width * scale),
+        height: Math.round(size.height * scale),
+      },
     });
     const src = sources.find((s) => s.display_id === String(displayId)) ?? sources[0];
     if (!src) throw new Error('No screen source available (check Screen Recording permission)');
-    if (src.thumbnail.isEmpty()) throw new Error('Screen capture returned an empty image — grant Screen Recording permission and restart Kestrel');
+    if (src.thumbnail.isEmpty())
+      throw new Error(
+        'Screen capture returned an empty image — grant Screen Recording permission and restart Kestrel',
+      );
     return src.thumbnail;
   }
 
-  private selectRegion(bounds: Rectangle, displayId: number, image: NativeImage): Promise<Region | null> {
+  private selectRegion(
+    bounds: Rectangle,
+    displayId: number,
+    image: NativeImage,
+  ): Promise<Region | null> {
     return new Promise((resolve) => {
       const win = new BrowserWindow({
         x: bounds.x,
@@ -103,7 +129,11 @@ export class ScreenshotService {
         skipTaskbar: true,
         hasShadow: false,
         enableLargerThanScreen: true,
-        webPreferences: { preload: join(__dirname, '../preload/region.js'), contextIsolation: true, sandbox: false },
+        webPreferences: {
+          preload: join(__dirname, '../preload/region.js'),
+          contextIsolation: true,
+          sandbox: false,
+        },
       });
       win.setAlwaysOnTop(true, 'screen-saver');
       win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -130,7 +160,8 @@ export class ScreenshotService {
         win.show();
         win.focus();
       });
-      if (is.dev && process.env['ELECTRON_RENDERER_URL']) void win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/region/index.html`);
+      if (is.dev && process.env['ELECTRON_RENDERER_URL'])
+        void win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/region/index.html`);
       else void win.loadFile(join(__dirname, '../renderer/region/index.html'));
     });
   }
@@ -147,22 +178,35 @@ export class ScreenshotService {
     const id = uid('shot');
     const path = join(this.deps.paths.screenshotsDir, `${id}.png`);
     writeFileSync(path, image.toPNG());
-    const result: ScreenshotResult = { id, sessionId: session?.id ?? null, path, result: '', status: 'streaming', createdAt: Date.now() };
+    const result: ScreenshotResult = {
+      id,
+      sessionId: session?.id ?? null,
+      path,
+      result: '',
+      status: 'streaming',
+      createdAt: Date.now(),
+    };
     this.deps.db.saveScreenshot(result);
     emit('screenshot:event', { type: 'start', result });
     this.deps.windows.showPanel();
 
     const { width, height } = image.getSize();
     const scale = Math.min(1, MODEL_MAX_EDGE / Math.max(width, height));
-    const forModel = scale < 1 ? image.resize({ width: Math.round(width * scale), height: Math.round(height * scale) }) : image;
+    const forModel =
+      scale < 1
+        ? image.resize({ width: Math.round(width * scale), height: Math.round(height * scale) })
+        : image;
     const b64 = forModel.toPNG().toString('base64');
 
     const profile = this.deps.sessions.activeProfile;
-    const system = renderTemplate(settings.prompts.screenshot_solve ?? DEFAULT_PROMPTS.screenshot_solve, {
-      user_name: profile?.userName || 'the user',
-      preferred_language: settings.defaults.codeLanguage,
-      language: profile?.language || settings.defaults.language,
-    });
+    const system = renderTemplate(
+      settings.prompts.screenshot_solve ?? DEFAULT_PROMPTS.screenshot_solve,
+      {
+        user_name: profile?.userName || 'the user',
+        preferred_language: settings.defaults.codeLanguage,
+        language: profile?.language || settings.defaults.language,
+      },
+    );
     const recentThem = this.deps.sessions
       .recent(90_000, 'THEM')
       .map((u) => u.text)
@@ -183,7 +227,9 @@ export class ScreenshotService {
                 type: 'text',
                 text:
                   'Solve what is on this screen.' +
-                  (recentThem ? `\n\nWhat the other party said most recently (may describe the task): "${recentThem.slice(-600)}"` : ''),
+                  (recentThem
+                    ? `\n\nWhat the other party said most recently (may describe the task): "${recentThem.slice(-600)}"`
+                    : ''),
               },
             ],
           },

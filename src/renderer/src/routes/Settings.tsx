@@ -9,7 +9,13 @@ import { Select } from '@renderer/components/ui/select';
 import { Switch } from '@renderer/components/ui/switch';
 import { Slider } from '@renderer/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@renderer/components/ui/card';
 import { Badge } from '@renderer/components/ui/badge';
 import { useSettings } from '@renderer/store/settings';
 import { toast } from '@renderer/store/toasts';
@@ -27,7 +33,17 @@ const MODEL_OPTIONS = [
   { value: 'claude-opus-5', label: 'Claude Opus 5 (strongest)' },
 ];
 
-function SecretField({ id, label, hint, testable }: { id: SecretKey; label: string; hint: string; testable?: boolean }) {
+function SecretField({
+  id,
+  label,
+  hint,
+  testable,
+}: {
+  id: SecretKey;
+  label: string;
+  hint: string;
+  testable?: boolean;
+}) {
   const has = useSettings((s) => s.secrets[id]);
   const refresh = useSettings((s) => s.refreshSecrets);
   const [value, setValue] = useState('');
@@ -52,7 +68,11 @@ function SecretField({ id, label, hint, testable }: { id: SecretKey; label: stri
     setBusy(true);
     try {
       const r = await invoke('secrets:test', id);
-      toast({ kind: r.ok ? 'success' : 'error', title: r.ok ? `${label} works` : `${label} failed`, message: r.message });
+      toast({
+        kind: r.ok ? 'success' : 'error',
+        title: r.ok ? `${label} works` : `${label} failed`,
+        message: r.message,
+      });
     } finally {
       setBusy(false);
     }
@@ -120,7 +140,11 @@ export default function Settings() {
 
   return (
     <Page title="Settings" scroll={false}>
-      <Tabs value={tab ?? 'keys'} onValueChange={(v) => navigate(`/settings/${v}`)} className="flex h-full flex-col">
+      <Tabs
+        value={tab ?? 'keys'}
+        onValueChange={(v) => navigate(`/settings/${v}`)}
+        className="flex h-full flex-col"
+      >
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="keys">Keys</TabsTrigger>
           <TabsTrigger value="audio">Audio</TabsTrigger>
@@ -139,32 +163,67 @@ export default function Settings() {
                   <KeyRound className="size-4" /> API keys
                 </CardTitle>
                 <CardDescription>
-                  Bring your own keys. They are stored in your OS {backend === 'keychain' ? 'keychain' : backend === 'safeStorage' ? 'encrypted storage' : 'memory only (no secure storage available)'} and never written to plain-text files or logs.
+                  Bring your own keys. They are stored in your OS{' '}
+                  {backend === 'keychain'
+                    ? 'keychain'
+                    : backend === 'safeStorage'
+                      ? 'encrypted storage'
+                      : 'memory only (no secure storage available)'}{' '}
+                  and never written to plain-text files or logs.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <SecretField id="anthropic" label="Anthropic API key" hint="console.anthropic.com → API keys. Powers answers, reviews and practice scoring." testable />
-                <SecretField id="deepgram" label="Deepgram API key" hint="console.deepgram.com. Default streaming transcription provider." testable />
-                <SecretField id="assemblyai" label="AssemblyAI API key" hint="assemblyai.com. Optional alternative transcription provider." testable />
+                <SecretField
+                  id="anthropic"
+                  label="Anthropic API key"
+                  hint="console.anthropic.com → API keys. Powers answers, reviews and practice scoring."
+                  testable
+                />
+                <SecretField
+                  id="deepgram"
+                  label="Deepgram API key"
+                  hint="console.deepgram.com. Default streaming transcription provider."
+                  testable
+                />
+                <SecretField
+                  id="assemblyai"
+                  label="AssemblyAI API key"
+                  hint="assemblyai.com. Optional alternative transcription provider."
+                  testable
+                />
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Models</CardTitle>
-                <CardDescription>Fast model for live answers; stronger model for screenshots, coding and reviews.</CardDescription>
+                <CardDescription>
+                  Fast model for live answers; stronger model for screenshots, coding and reviews.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
                   <Label>Live answers (fast)</Label>
-                  <Select options={MODEL_OPTIONS} value={settings.models.live} onValueChange={(v) => void update({ models: { live: v } })} />
+                  <Select
+                    options={MODEL_OPTIONS}
+                    value={settings.models.live}
+                    onValueChange={(v) => void update({ models: { live: v } })}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label>Screenshots, coding &amp; review (strong)</Label>
-                  <Select options={MODEL_OPTIONS} value={settings.models.heavy} onValueChange={(v) => void update({ models: { heavy: v } })} />
+                  <Select
+                    options={MODEL_OPTIONS}
+                    value={settings.models.heavy}
+                    onValueChange={(v) => void update({ models: { heavy: v } })}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label>Question classifier &amp; summaries</Label>
-                  <Select options={MODEL_OPTIONS} value={settings.models.classifier} onValueChange={(v) => void update({ models: { classifier: v } })} />
+                  <Select
+                    options={MODEL_OPTIONS}
+                    value={settings.models.classifier}
+                    onValueChange={(v) => void update({ models: { classifier: v } })}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label>Transcription provider</Label>
@@ -174,7 +233,9 @@ export default function Settings() {
                       { value: 'assemblyai', label: 'AssemblyAI Universal Streaming' },
                     ]}
                     value={settings.transcriber}
-                    onValueChange={(v) => void update({ transcriber: v as 'deepgram' | 'assemblyai' })}
+                    onValueChange={(v) =>
+                      void update({ transcriber: v as 'deepgram' | 'assemblyai' })
+                    }
                   />
                 </div>
               </CardContent>
@@ -191,11 +252,23 @@ export default function Settings() {
                 <CardTitle>Answering behaviour</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Row label="Auto-answer detected questions" hint="Start an answer the moment a question is detected, no hotkey needed.">
-                  <Switch checked={settings.autoAnswer} onCheckedChange={(v) => void update({ autoAnswer: v })} />
+                <Row
+                  label="Auto-answer detected questions"
+                  hint="Start an answer the moment a question is detected, no hotkey needed."
+                >
+                  <Switch
+                    checked={settings.autoAnswer}
+                    onCheckedChange={(v) => void update({ autoAnswer: v })}
+                  />
                 </Row>
-                <Row label="Answer smalltalk" hint="Off: smalltalk shows a small chip you can click instead of a full answer.">
-                  <Switch checked={settings.smalltalkAnswers} onCheckedChange={(v) => void update({ smalltalkAnswers: v })} />
+                <Row
+                  label="Answer smalltalk"
+                  hint="Off: smalltalk shows a small chip you can click instead of a full answer."
+                >
+                  <Switch
+                    checked={settings.smalltalkAnswers}
+                    onCheckedChange={(v) => void update({ smalltalkAnswers: v })}
+                  />
                 </Row>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -207,7 +280,9 @@ export default function Settings() {
                         { value: 'detailed', label: 'Detailed' },
                       ]}
                       value={settings.defaults.length}
-                      onValueChange={(v) => void update({ defaults: { length: v as 'short' | 'medium' | 'detailed' } })}
+                      onValueChange={(v) =>
+                        void update({ defaults: { length: v as 'short' | 'medium' | 'detailed' } })
+                      }
                     />
                   </div>
                   <div className="space-y-1">
@@ -219,16 +294,24 @@ export default function Settings() {
                         { value: 'formal', label: 'Formal' },
                       ]}
                       value={settings.defaults.tone}
-                      onValueChange={(v) => void update({ defaults: { tone: v as 'confident' | 'casual' | 'formal' } })}
+                      onValueChange={(v) =>
+                        void update({ defaults: { tone: v as 'confident' | 'casual' | 'formal' } })
+                      }
                     />
                   </div>
                   <div className="space-y-1">
                     <Label>Answer language</Label>
-                    <Input value={settings.defaults.language} onChange={(e) => void update({ defaults: { language: e.target.value } })} />
+                    <Input
+                      value={settings.defaults.language}
+                      onChange={(e) => void update({ defaults: { language: e.target.value } })}
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label>Code language</Label>
-                    <Input value={settings.defaults.codeLanguage} onChange={(e) => void update({ defaults: { codeLanguage: e.target.value } })} />
+                    <Input
+                      value={settings.defaults.codeLanguage}
+                      onChange={(e) => void update({ defaults: { codeLanguage: e.target.value } })}
+                    />
                   </div>
                   <div className="col-span-2 space-y-1">
                     <Label>Transcription language</Label>
@@ -268,18 +351,32 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Row label="Always on top">
-                  <Switch checked={settings.ui.alwaysOnTop} onCheckedChange={(v) => void update({ ui: { alwaysOnTop: v } })} />
+                  <Switch
+                    checked={settings.ui.alwaysOnTop}
+                    onCheckedChange={(v) => void update({ ui: { alwaysOnTop: v } })}
+                  />
                 </Row>
                 <Row label="Compact layout">
-                  <Switch checked={settings.ui.compact} onCheckedChange={(v) => void invoke('window:setCompact', v)} />
+                  <Switch
+                    checked={settings.ui.compact}
+                    onCheckedChange={(v) => void invoke('window:setCompact', v)}
+                  />
                 </Row>
-                <Row label="Show latency on cards" hint="Developer view: milliseconds from the interviewer's last word to first token.">
-                  <Switch checked={settings.ui.showLatency} onCheckedChange={(v) => void update({ ui: { showLatency: v } })} />
+                <Row
+                  label="Show latency on cards"
+                  hint="Developer view: milliseconds from the interviewer's last word to first token."
+                >
+                  <Switch
+                    checked={settings.ui.showLatency}
+                    onCheckedChange={(v) => void update({ ui: { showLatency: v } })}
+                  />
                 </Row>
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
                     <Label>Opacity</Label>
-                    <span className="text-xs text-muted-foreground">{Math.round(opacity * 100)}%</span>
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round(opacity * 100)}%
+                    </span>
                   </div>
                   <Slider
                     min={0.3}
@@ -290,7 +387,8 @@ export default function Settings() {
                       if (v !== undefined) setOpacity(v);
                     }}
                     onValueCommit={([v]) => {
-                      if (v !== undefined) void update({ ui: { opacity: v } }).then(() => setOpacityDraft(null));
+                      if (v !== undefined)
+                        void update({ ui: { opacity: v } }).then(() => setOpacityDraft(null));
                     }}
                   />
                 </div>
@@ -304,13 +402,18 @@ export default function Settings() {
                         { value: 'system', label: 'System' },
                       ]}
                       value={settings.ui.theme}
-                      onValueChange={(v) => void update({ ui: { theme: v as 'dark' | 'light' | 'system' } })}
+                      onValueChange={(v) =>
+                        void update({ ui: { theme: v as 'dark' | 'light' | 'system' } })
+                      }
                     />
                   </div>
                   <div className="space-y-1">
                     <Label>Font size</Label>
                     <Select
-                      options={[12, 13, 14, 15, 16, 18].map((n) => ({ value: String(n), label: `${n}px` }))}
+                      options={[12, 13, 14, 15, 16, 18].map((n) => ({
+                        value: String(n),
+                        label: `${n}px`,
+                      }))}
                       value={String(settings.ui.fontSize)}
                       onValueChange={(v) => void update({ ui: { fontSize: Number(v) } })}
                     />
@@ -337,7 +440,15 @@ export default function Settings() {
   );
 }
 
-export function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+export function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">

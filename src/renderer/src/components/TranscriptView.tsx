@@ -34,10 +34,23 @@ export function TranscriptView({
 
   return (
     <div className={cn('relative min-h-0', className)}>
-      <div ref={ref} onScroll={onScroll} className="h-full space-y-1.5 overflow-y-auto pr-1 selectable">
-        {empty && <div className="py-6 text-center text-xs text-muted-foreground">Waiting for speech…</div>}
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="h-full space-y-1.5 overflow-y-auto pr-1 selectable"
+      >
+        {empty && (
+          <div className="py-6 text-center text-xs text-muted-foreground">Waiting for speech…</div>
+        )}
         {finals.map((u) => (
-          <Row key={u.id} speaker={u.speaker} name={u.speakerName} text={u.text} time={formatMs(u.startMs)} compact={compact} />
+          <Row
+            key={u.id}
+            speaker={u.speaker}
+            name={u.speakerName}
+            text={u.text}
+            time={formatMs(u.startMs)}
+            compact={compact}
+          />
         ))}
         {interim.THEM && <Row speaker="THEM" text={interim.THEM} interim compact={compact} />}
         {interim.ME && <Row speaker="ME" text={interim.ME} interim compact={compact} />}
@@ -58,15 +71,39 @@ export function TranscriptView({
   );
 }
 
-function Row({ speaker, name, text, time, interim, compact }: { speaker: Utterance['speaker']; name?: string; text: string; time?: string; interim?: boolean; compact?: boolean }) {
+function Row({
+  speaker,
+  name,
+  text,
+  time,
+  interim,
+  compact,
+}: {
+  speaker: Utterance['speaker'];
+  name?: string;
+  text: string;
+  time?: string;
+  interim?: boolean;
+  compact?: boolean;
+}) {
   const tone = speaker === 'ME' ? 'text-me' : speaker === 'THEM' ? 'text-them' : 'text-primary';
   return (
     <div className={cn('flex gap-2 rounded-md px-1.5 py-1', interim && 'opacity-60')}>
       <div className="w-11 shrink-0 pt-0.5">
         <div className={cn('text-[10px] font-bold tracking-widest', tone)}>{speaker}</div>
-        {!compact && (name || time) && <div className="truncate text-[9px] text-muted-foreground">{name ?? time}</div>}
+        {!compact && (name || time) && (
+          <div className="truncate text-[9px] text-muted-foreground">{name ?? time}</div>
+        )}
       </div>
-      <div className={cn('min-w-0 flex-1 leading-snug', compact ? 'text-xs' : 'text-[13px]', interim && 'caret italic')}>{text}</div>
+      <div
+        className={cn(
+          'min-w-0 flex-1 leading-snug',
+          compact ? 'text-xs' : 'text-[13px]',
+          interim && 'caret italic',
+        )}
+      >
+        {text}
+      </div>
     </div>
   );
 }

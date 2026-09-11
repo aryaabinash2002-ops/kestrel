@@ -9,11 +9,7 @@ export type SystemAudioMode = 'auto' | 'extension' | 'loopback' | 'device';
 export type SecretKey = 'anthropic' | 'deepgram' | 'assemblyai';
 
 export type HotkeyName =
-  | 'toggleListening'
-  | 'answerNow'
-  | 'screenshotSolve'
-  | 'togglePanel'
-  | 'clearCards';
+  'toggleListening' | 'answerNow' | 'screenshotSolve' | 'togglePanel' | 'clearCards';
 
 export type HotkeyBindings = Record<HotkeyName, string>;
 

@@ -1,6 +1,13 @@
 import { cn } from '@renderer/lib/utils';
 
-export function Page({ title, subtitle, actions, children, className, scroll = true }: {
+export function Page({
+  title,
+  subtitle,
+  actions,
+  children,
+  className,
+  scroll = true,
+}: {
   title?: string;
   subtitle?: string;
   actions?: React.ReactNode;
@@ -19,7 +26,9 @@ export function Page({ title, subtitle, actions, children, className, scroll = t
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
         </div>
       )}
-      <div className={cn('min-h-0 flex-1 px-4 pb-4', scroll && 'overflow-y-auto', className)}>{children}</div>
+      <div className={cn('min-h-0 flex-1 px-4 pb-4', scroll && 'overflow-y-auto', className)}>
+        {children}
+      </div>
     </div>
   );
 }

@@ -7,7 +7,9 @@ const fx = (f: string) => resolve(__dirname, 'fixtures', f);
 
 describe('document parsing', () => {
   it('cleans extracted text (unwraps mid-sentence breaks, collapses whitespace)', () => {
-    const out = cleanExtractedText('Led the   billing\nmigration to Stripe.\r\n\r\n\r\nNext   line');
+    const out = cleanExtractedText(
+      'Led the   billing\nmigration to Stripe.\r\n\r\n\r\nNext   line',
+    );
     expect(out).toBe('Led the billing migration to Stripe.\n\nNext line');
   });
 

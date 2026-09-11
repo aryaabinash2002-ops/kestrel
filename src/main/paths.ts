@@ -46,7 +46,14 @@ export class Paths {
   }
 
   ensure(): void {
-    for (const d of [this.dataDir, this.filesDir, this.screenshotsDir, this.documentsDir, this.exportsDir, this.logsDir]) {
+    for (const d of [
+      this.dataDir,
+      this.filesDir,
+      this.screenshotsDir,
+      this.documentsDir,
+      this.exportsDir,
+      this.logsDir,
+    ]) {
       if (!existsSync(d)) mkdirSync(d, { recursive: true });
     }
   }

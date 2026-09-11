@@ -6,11 +6,15 @@ import { DEFAULT_SETTINGS } from '@shared/types/settings';
 import type { AnswerCard } from '@shared/types/session';
 import { startFakeAnthropic, type FakeAnthropic } from './fakes/fakeAnthropic';
 
-vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] }, ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} } }));
+vi.mock('electron', () => ({
+  BrowserWindow: { getAllWindows: () => [] },
+  ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} },
+}));
 
 const { SessionDB } = await import('@main/db');
 const { LLMService } = await import('@main/llm/LLMService');
-const { ReviewService, renderMarkdown, markdownToHtml, transcriptText } = await import('@main/review/ReviewService');
+const { ReviewService, renderMarkdown, markdownToHtml, transcriptText } =
+  await import('@main/review/ReviewService');
 
 let fake: FakeAnthropic;
 let exportsDir: string;
@@ -27,13 +31,56 @@ afterEach(async () => {
 
 function seed() {
   const db = new SessionDB(':memory:');
-  const profile = db.saveProfile({ name: 'Acme — Senior Engineer', userName: 'Jane', role: 'Senior Software Engineer', company: 'Acme', type: 'behavioral', language: 'English' });
+  const profile = db.saveProfile({
+    name: 'Acme — Senior Engineer',
+    userName: 'Jane',
+    role: 'Senior Software Engineer',
+    company: 'Acme',
+    type: 'behavioral',
+    language: 'English',
+  });
   const session = db.createSession(profile.id, 'live');
   const startedAt = session.startedAt;
-  db.upsertUtterance({ id: 'u1', sessionId: session.id, speaker: 'THEM', text: 'Tell me about a time you led a migration.', startMs: 5000, endMs: 8000, isFinal: true, source: 'stt' });
-  db.upsertUtterance({ id: 'u2', sessionId: session.id, speaker: 'ME', text: 'At Globex I led the billing migration to Stripe.', startMs: 9000, endMs: 15000, isFinal: true, source: 'stt' });
-  db.upsertUtterance({ id: 'u3', sessionId: session.id, speaker: 'THEM', text: 'What was the result?', startMs: 16000, endMs: 17000, isFinal: true, source: 'stt' });
-  db.upsertUtterance({ id: 'u4', sessionId: session.id, speaker: 'ME', text: 'Failures went from twelve percent to one.', startMs: 18000, endMs: 21000, isFinal: true, source: 'stt' });
+  db.upsertUtterance({
+    id: 'u1',
+    sessionId: session.id,
+    speaker: 'THEM',
+    text: 'Tell me about a time you led a migration.',
+    startMs: 5000,
+    endMs: 8000,
+    isFinal: true,
+    source: 'stt',
+  });
+  db.upsertUtterance({
+    id: 'u2',
+    sessionId: session.id,
+    speaker: 'ME',
+    text: 'At Globex I led the billing migration to Stripe.',
+    startMs: 9000,
+    endMs: 15000,
+    isFinal: true,
+    source: 'stt',
+  });
+  db.upsertUtterance({
+    id: 'u3',
+    sessionId: session.id,
+    speaker: 'THEM',
+    text: 'What was the result?',
+    startMs: 16000,
+    endMs: 17000,
+    isFinal: true,
+    source: 'stt',
+  });
+  db.upsertUtterance({
+    id: 'u4',
+    sessionId: session.id,
+    speaker: 'ME',
+    text: 'Failures went from twelve percent to one.',
+    startMs: 18000,
+    endMs: 21000,
+    isFinal: true,
+    source: 'stt',
+  });
   const card: AnswerCard = {
     id: 'ans_1',
     sessionId: session.id,
@@ -44,19 +91,40 @@ function seed() {
     content: '',
     model: 'claude-haiku-4-5-20251001',
     status: 'done',
-    latency: { questionEndTs: startedAt + 8000, requestStartTs: startedAt + 8100, firstTokenTs: startedAt + 8400, headlineDoneTs: startedAt + 8600, doneTs: startedAt + 9200, speculative: true, restarted: false },
+    latency: {
+      questionEndTs: startedAt + 8000,
+      requestStartTs: startedAt + 8100,
+      firstTokenTs: startedAt + 8400,
+      headlineDoneTs: startedAt + 8600,
+      doneTs: startedAt + 9200,
+      speculative: true,
+      restarted: false,
+    },
     kind: 'auto',
     createdAt: startedAt + 8100,
   };
   db.saveAnswer(card);
-  db.saveScreenshot({ id: 'shot_1', sessionId: session.id, path: '/tmp/shot_1.png', result: '## Problem\nTwo-sum.', status: 'done', createdAt: startedAt + 30000 });
+  db.saveScreenshot({
+    id: 'shot_1',
+    sessionId: session.id,
+    path: '/tmp/shot_1.png',
+    result: '## Problem\nTwo-sum.',
+    status: 'done',
+    createdAt: startedAt + 30000,
+  });
   db.endSession(session.id);
   return { db, session, profile };
 }
 
 function service(db: InstanceType<typeof SessionDB>) {
   const llm = new LLMService({ get: async () => 'test-key' } as never);
-  return new ReviewService({ llm, db, paths: { exportsDir } as never, windows: {} as never, getSettings: () => DEFAULT_SETTINGS });
+  return new ReviewService({
+    llm,
+    db,
+    paths: { exportsDir } as never,
+    windows: {} as never,
+    getSettings: () => DEFAULT_SETTINGS,
+  });
 }
 
 describe('ReviewService', () => {
@@ -74,12 +142,21 @@ describe('ReviewService', () => {
     // Request shape: heavy model, JSON schema with the five fields, transcript in the user turn.
     const req = fake.requests[0]!;
     expect(req.body.model).toBe(DEFAULT_SETTINGS.models.heavy);
-    const fmt = (req.body.output_config as { format?: { schema?: { required?: string[] } } })?.format;
-    expect(fmt?.schema?.required).toEqual(['summary', 'questions', 'weakSpots', 'followUpEmail', 'actionItems']);
+    const fmt = (req.body.output_config as { format?: { schema?: { required?: string[] } } })
+      ?.format;
+    expect(fmt?.schema?.required).toEqual([
+      'summary',
+      'questions',
+      'weakSpots',
+      'followUpEmail',
+      'actionItems',
+    ]);
     const user = JSON.stringify(req.body.messages);
     expect(user).toContain('[00:05] THEM: Tell me about a time you led a migration.');
     expect(user).toContain('AI (suggested');
-    expect(typeof req.body.system === 'string' ? req.body.system : '').toContain('Senior Software Engineer at Acme');
+    expect(typeof req.body.system === 'string' ? req.body.system : '').toContain(
+      'Senior Software Engineer at Acme',
+    );
   });
 
   it('refuses to review an empty session with a clear message', async () => {
@@ -98,7 +175,17 @@ describe('ReviewService', () => {
     expect(path).toMatch(/kestrel-review-\d{4}-\d{2}-\d{2}-\d{4}-acme-senior-engineer\.md$/);
     expect(existsSync(path)).toBe(true);
     const md = readFileSync(path, 'utf8');
-    for (const h of ['# Kestrel review — Acme — Senior Engineer', '## Summary', '## Questions asked', '## Weak spots', '## Follow-up email', '## Action items', '## Suggested answers', '## Screenshots', '## Full transcript']) {
+    for (const h of [
+      '# Kestrel review — Acme — Senior Engineer',
+      '## Summary',
+      '## Questions asked',
+      '## Weak spots',
+      '## Follow-up email',
+      '## Action items',
+      '## Suggested answers',
+      '## Screenshots',
+      '## Full transcript',
+    ]) {
       expect(md).toContain(h);
     }
     expect(md).toContain('[00:05] THEM: Tell me about a time you led a migration.');

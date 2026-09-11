@@ -42,7 +42,9 @@ export type ExtMessage =
   | { type: 'meet-query' };
 
 export async function loadSettings(): Promise<StoredSettings> {
-  const raw = (await chrome.storage.local.get('settings')) as { settings?: Partial<StoredSettings> };
+  const raw = (await chrome.storage.local.get('settings')) as {
+    settings?: Partial<StoredSettings>;
+  };
   return { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) };
 }
 

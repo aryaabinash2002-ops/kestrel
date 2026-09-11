@@ -12,7 +12,13 @@ afterEach(async () => {
 });
 
 function make(): DeepgramTranscriber {
-  return new DeepgramTranscriber({ channel: 'THEM', apiKey: 'test-key', language: 'multi', sampleRate: 16000, endpoint: server.url });
+  return new DeepgramTranscriber({
+    channel: 'THEM',
+    apiKey: 'test-key',
+    language: 'multi',
+    sampleRate: 16000,
+    endpoint: server.url,
+  });
 }
 
 describe('DeepgramTranscriber', () => {
@@ -44,7 +50,12 @@ describe('DeepgramTranscriber', () => {
     expect(server.bytesReceived).toBe(3200);
 
     server.results('what is your', { start: 0, end: 0.9 });
-    server.results('What is your greatest strength?', { isFinal: true, speechFinal: true, start: 0, end: 1.8 });
+    server.results('What is your greatest strength?', {
+      isFinal: true,
+      speechFinal: true,
+      start: 0,
+      end: 1.8,
+    });
     await wait(80);
     expect(results).toHaveLength(2);
     expect(results[0]?.isFinal).toBe(false);

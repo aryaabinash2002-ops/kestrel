@@ -1,5 +1,10 @@
 import { EventEmitter } from 'node:events';
-import type { PracticeEvent, PracticeHistoryEntry, PracticeQuestionSet, SessionState } from '@shared/types/ipc';
+import type {
+  PracticeEvent,
+  PracticeHistoryEntry,
+  PracticeQuestionSet,
+  SessionState,
+} from '@shared/types/ipc';
 import type { PracticeScore, Profile } from '@shared/types/session';
 import type { Settings } from '@shared/types/settings';
 import { uid } from '@shared/utils';
@@ -37,7 +42,16 @@ export const SCORE_SCHEMA = {
     improve_one_thing: { type: 'string' },
     model_answer: { type: 'string' },
   },
-  required: ['score', 'relevance', 'structure', 'specificity', 'conciseness', 'strengths', 'improve_one_thing', 'model_answer'],
+  required: [
+    'score',
+    'relevance',
+    'structure',
+    'specificity',
+    'conciseness',
+    'strengths',
+    'improve_one_thing',
+    'model_answer',
+  ],
   additionalProperties: false,
 } as const;
 
@@ -90,7 +104,11 @@ export class PracticeService extends EventEmitter {
     const profile = profileId ? this.deps.db.getProfile(profileId) : null;
     const hasJd = !!profile?.jdText?.trim();
     return [
-      { id: 'behavioral', label: STATIC_BANKS.behavioral.label, description: STATIC_BANKS.behavioral.description },
+      {
+        id: 'behavioral',
+        label: STATIC_BANKS.behavioral.label,
+        description: STATIC_BANKS.behavioral.description,
+      },
       {
         id: 'role',
         label: 'Role-specific (from the job description)',
@@ -98,12 +116,25 @@ export class PracticeService extends EventEmitter {
           ? `Questions generated for ${profile?.role || 'the role'}${profile?.company ? ` at ${profile.company}` : ''} from the JD and your résumé.`
           : 'Needs a profile with a job description — falls back to common behavioral questions.',
       },
-      { id: 'coding', label: STATIC_BANKS.coding.label, description: STATIC_BANKS.coding.description },
-      { id: 'system_design', label: STATIC_BANKS.system_design.label, description: STATIC_BANKS.system_design.description },
+      {
+        id: 'coding',
+        label: STATIC_BANKS.coding.label,
+        description: STATIC_BANKS.coding.description,
+      },
+      {
+        id: 'system_design',
+        label: STATIC_BANKS.system_design.label,
+        description: STATIC_BANKS.system_design.description,
+      },
     ];
   }
 
-  async start(opts: { profileId: string | null; setId: string; count: number; useTts: boolean }): Promise<SessionState> {
+  async start(opts: {
+    profileId: string | null;
+    setId: string;
+    count: number;
+    useTts: boolean;
+  }): Promise<SessionState> {
     if (this.run) await this.stop();
     const profile = opts.profileId ? this.deps.db.getProfile(opts.profileId) : null;
     const count = Math.min(20, Math.max(1, Math.round(opts.count) || 5));
@@ -117,9 +148,14 @@ export class PracticeService extends EventEmitter {
       this.deps.sessions.setListening(true);
     } catch (err) {
       log.warn('mic start failed', err);
-      this.push({ type: 'error', error: `Microphone could not start: ${err instanceof Error ? err.message : String(err)}` });
+      this.push({
+        type: 'error',
+        error: `Microphone could not start: ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
-    log.info(`practice started: ${opts.setId} × ${questions.length}${profile ? ` (${profile.name})` : ''}`);
+    log.info(
+      `practice started: ${opts.setId} × ${questions.length}${profile ? ` (${profile.name})` : ''}`,
+    );
     this.askCurrent();
     return this.deps.sessions.state();
   }
@@ -138,7 +174,14 @@ export class PracticeService extends EventEmitter {
     this.push({ type: 'scoring' });
     try {
       const score = await this.score(run, q, answer);
-      const entry: PracticeScore = { id: uid('ps'), sessionId: run.sessionId, question: q.question, answer, score, createdAt: Date.now() };
+      const entry: PracticeScore = {
+        id: uid('ps'),
+        sessionId: run.sessionId,
+        question: q.question,
+        answer,
+        score,
+        createdAt: Date.now(),
+      };
       this.deps.db.savePracticeScore(entry);
       run.scores.push(entry);
       this.push({ type: 'score', score: entry });
@@ -167,8 +210,17 @@ export class PracticeService extends EventEmitter {
       .listPracticeSessions(profileId)
       .map((s) => {
         const scores = this.deps.db.listPracticeScores(s.id);
-        const avg = scores.length ? scores.reduce((a, b) => a + b.score.score, 0) / scores.length : 0;
-        return { sessionId: s.id, startedAt: s.startedAt, endedAt: s.endedAt, count: scores.length, avgScore: Math.round(avg * 10) / 10, scores };
+        const avg = scores.length
+          ? scores.reduce((a, b) => a + b.score.score, 0) / scores.length
+          : 0;
+        return {
+          sessionId: s.id,
+          startedAt: s.startedAt,
+          endedAt: s.endedAt,
+          count: scores.length,
+          avgScore: Math.round(avg * 10) / 10,
+          scores,
+        };
       })
       .filter((h) => h.count > 0);
   }
@@ -187,7 +239,13 @@ export class PracticeService extends EventEmitter {
       void this.finish();
       return;
     }
-    this.push({ type: 'question', index: run.index, total: run.questions.length, question: q.question, category: q.category });
+    this.push({
+      type: 'question',
+      index: run.index,
+      total: run.questions.length,
+      question: q.question,
+      category: q.category,
+    });
   }
 
   private async advance(): Promise<void> {
@@ -212,29 +270,47 @@ export class PracticeService extends EventEmitter {
     log.info(`practice finished: ${run.scores.length} scored of ${run.questions.length}`);
   }
 
-  private async pickQuestions(setId: PracticeSetId, count: number, profile: Profile | null): Promise<BankQuestion[]> {
+  private async pickQuestions(
+    setId: PracticeSetId,
+    count: number,
+    profile: Profile | null,
+  ): Promise<BankQuestion[]> {
     if (setId === 'role') {
       const generated = await this.generateRoleQuestions(count, profile);
       if (generated.length) return generated;
-      emit('toast', { kind: 'info', title: 'Using common behavioral questions', message: 'Role-specific questions need a profile with a job description and a working Anthropic key.' });
+      emit('toast', {
+        kind: 'info',
+        title: 'Using common behavioral questions',
+        message:
+          'Role-specific questions need a profile with a job description and a working Anthropic key.',
+      });
       return pickStatic('behavioral', count);
     }
     if (setId in STATIC_BANKS) return pickStatic(setId as Exclude<PracticeSetId, 'role'>, count);
     return pickStatic('behavioral', count);
   }
 
-  private async generateRoleQuestions(count: number, profile: Profile | null): Promise<BankQuestion[]> {
+  private async generateRoleQuestions(
+    count: number,
+    profile: Profile | null,
+  ): Promise<BankQuestion[]> {
     if (!profile?.jdText?.trim()) return [];
     const s = this.deps.getSettings();
-    const system = renderTemplate(s.prompts.practice_interviewer ?? DEFAULT_PROMPTS.practice_interviewer, {
-      company: profile.company || 'the company',
-      role: profile.role || 'the role',
-      interview_type: profile.type.replace('_', ' '),
-      count: String(count),
-      category: profile.type === 'technical' || profile.type === 'system_design' ? 'technical and role-specific' : 'role-specific behavioral and situational',
-      jd_text: profile.jdText,
-      resume_text: profile.resumeText || '(no résumé)',
-    });
+    const system = renderTemplate(
+      s.prompts.practice_interviewer ?? DEFAULT_PROMPTS.practice_interviewer,
+      {
+        company: profile.company || 'the company',
+        role: profile.role || 'the role',
+        interview_type: profile.type.replace('_', ' '),
+        count: String(count),
+        category:
+          profile.type === 'technical' || profile.type === 'system_design'
+            ? 'technical and role-specific'
+            : 'role-specific behavioral and situational',
+        jd_text: profile.jdText,
+        resume_text: profile.resumeText || '(no résumé)',
+      },
+    );
     try {
       const out = await this.deps.llm.json<{ questions?: unknown }>({
         model: s.models.heavy,
@@ -244,8 +320,12 @@ export class PracticeService extends EventEmitter {
         schemaName: 'practice_questions',
         maxTokens: 1200,
       });
-      const qs = Array.isArray(out.questions) ? out.questions.filter((q): q is string => typeof q === 'string' && q.trim().length > 8) : [];
-      return qs.slice(0, count).map((question) => ({ question: question.trim(), category: 'role' }));
+      const qs = Array.isArray(out.questions)
+        ? out.questions.filter((q): q is string => typeof q === 'string' && q.trim().length > 8)
+        : [];
+      return qs
+        .slice(0, count)
+        .map((question) => ({ question: question.trim(), category: 'role' }));
     } catch (err) {
       log.warn('role question generation failed', err);
       return [];
@@ -260,7 +340,9 @@ export class PracticeService extends EventEmitter {
       company: p?.company || 'the company',
       interview_type: (p?.type ?? 'general').replace('_', ' '),
       resume_text: p?.resumeText || '(no résumé — do not invent experience)',
-      stories: p?.stories?.length ? p.stories.map((st) => `### ${st.title}\n${st.text}`).join('\n\n') : '(none)',
+      stories: p?.stories?.length
+        ? p.stories.map((st) => `### ${st.title}\n${st.text}`).join('\n\n')
+        : '(none)',
     });
     const user = `Question (${q.category}): ${q.question}\n\nCandidate's spoken answer (transcribed):\n${answer}`;
     const raw = await this.deps.llm.json<Partial<PracticeScore['score']>>({
@@ -277,7 +359,9 @@ export class PracticeService extends EventEmitter {
       structure: clamp10(raw.structure),
       specificity: clamp10(raw.specificity),
       conciseness: clamp10(raw.conciseness),
-      strengths: Array.isArray(raw.strengths) ? raw.strengths.filter((x): x is string => typeof x === 'string').slice(0, 5) : [],
+      strengths: Array.isArray(raw.strengths)
+        ? raw.strengths.filter((x): x is string => typeof x === 'string').slice(0, 5)
+        : [],
       improve_one_thing: typeof raw.improve_one_thing === 'string' ? raw.improve_one_thing : '',
       model_answer: typeof raw.model_answer === 'string' ? raw.model_answer : '',
     };

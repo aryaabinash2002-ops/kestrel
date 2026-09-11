@@ -45,7 +45,8 @@ function readEntries(region: Element): void {
   const now = Date.now();
   for (const block of blocks) {
     const speaker = query(SELECTORS.captionSpeaker, block)?.textContent?.trim() ?? '';
-    const text = query(SELECTORS.captionText, block)?.textContent?.trim() ?? block.textContent?.trim() ?? '';
+    const text =
+      query(SELECTORS.captionText, block)?.textContent?.trim() ?? block.textContent?.trim() ?? '';
     if (!text) continue;
     let e = entries.get(block);
     if (!e) {
@@ -66,7 +67,8 @@ function readEntries(region: Element): void {
   // Entries that vanished from the DOM are final.
   for (const [el, e] of entries) {
     if (!el.isConnected) {
-      if (!e.sentFinal && e.text) send({ type: 'meet-caption', speaker: e.speaker, text: e.text, ts: now, isFinal: true });
+      if (!e.sentFinal && e.text)
+        send({ type: 'meet-caption', speaker: e.speaker, text: e.text, ts: now, isFinal: true });
       entries.delete(el);
     }
   }

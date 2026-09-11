@@ -54,7 +54,9 @@ export function AnswerArea({ q }: { q: CurrentQuestion }) {
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-bold tracking-widest text-me">ME</span>
         <LevelMeter level={meStatus?.active ? level : 0} tone="me" className="flex-1" />
-        <span className="truncate text-[10px] text-muted-foreground">{meStatus?.deviceLabel ?? ''}</span>
+        <span className="truncate text-[10px] text-muted-foreground">
+          {meStatus?.deviceLabel ?? ''}
+        </span>
       </div>
       <Textarea
         rows={5}
@@ -64,16 +66,28 @@ export function AnswerArea({ q }: { q: CurrentQuestion }) {
         className="text-[13px] leading-relaxed"
         disabled={busy}
       />
-      {interim && phase !== 'scoring' && <p className="text-xs italic text-muted-foreground caret">{interim}</p>}
+      {interim && phase !== 'scoring' && (
+        <p className="text-xs italic text-muted-foreground caret">{interim}</p>
+      )}
       <p className="text-[11px] text-muted-foreground">{sttHint}</p>
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={() => void submit(text)} disabled={busy || phase === 'speaking' || !text.trim()}>
+        <Button
+          size="sm"
+          onClick={() => void submit(text)}
+          disabled={busy || phase === 'speaking' || !text.trim()}
+        >
           <Check /> Done answering
         </Button>
         <Button size="sm" variant="outline" onClick={() => void skip()} disabled={busy}>
           <SkipForward /> Skip
         </Button>
-        <Button size="sm" variant="ghost" className="ml-auto" onClick={() => void stop()} disabled={busy}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto"
+          onClick={() => void stop()}
+          disabled={busy}
+        >
           <Square /> End
         </Button>
       </div>

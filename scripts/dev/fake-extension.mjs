@@ -18,7 +18,9 @@ const db = join(homedir(), 'Library/Application Support/kestrel/data/kestrel.db'
 
 function readToken() {
   try {
-    return execSync(`sqlite3 "${db}" "select value from meta where key='extension_token'"`).toString().trim();
+    return execSync(`sqlite3 "${db}" "select value from meta where key='extension_token'"`)
+      .toString()
+      .trim();
   } catch {
     return '';
   }
@@ -32,7 +34,9 @@ async function connectWithRetry() {
     if (token) {
       try {
         const ws = await new Promise((resolve, reject) => {
-          const s = new WebSocket(`ws://127.0.0.1:${port}/`, { headers: { origin: 'chrome-extension://fakeext' } });
+          const s = new WebSocket(`ws://127.0.0.1:${port}/`, {
+            headers: { origin: 'chrome-extension://fakeext' },
+          });
           s.once('open', () => resolve(s));
           s.once('error', reject);
         });
@@ -51,7 +55,9 @@ const log = (...a) => console.log('[fake-ext]', ...a);
 ws.on('message', (d) => log('←', d.toString()));
 ws.send(JSON.stringify({ type: 'hello', token, client: 'FakeChrome', version: '0.0.0' }));
 await wait(300);
-ws.send(JSON.stringify({ type: 'call', state: 'joined', url: 'https://meet.google.com/abc-defg-hij' }));
+ws.send(
+  JSON.stringify({ type: 'call', state: 'joined', url: 'https://meet.google.com/abc-defg-hij' }),
+);
 await wait(500);
 ws.send(JSON.stringify({ type: 'capture', state: 'started' }));
 
@@ -62,7 +68,8 @@ let pcm;
 if (audioFile && existsSync(audioFile)) pcm = readFileSync(audioFile);
 else {
   pcm = Buffer.alloc(16000 * 2 * 6);
-  for (let i = 0; i < 16000 * 6; i++) pcm.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / 16000) * 8000), i * 2);
+  for (let i = 0; i < 16000 * 6; i++)
+    pcm.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / 16000) * 8000), i * 2);
 }
 const timer = setInterval(() => {
   if (sent >= pcm.length) return;
@@ -70,11 +77,35 @@ const timer = setInterval(() => {
   sent += chunk;
 }, 80);
 await wait(1500);
-ws.send(JSON.stringify({ type: 'caption', speaker: 'Alice Interviewer', text: 'So, can you walk me through', ts: Date.now(), isFinal: false }));
+ws.send(
+  JSON.stringify({
+    type: 'caption',
+    speaker: 'Alice Interviewer',
+    text: 'So, can you walk me through',
+    ts: Date.now(),
+    isFinal: false,
+  }),
+);
 await wait(800);
-ws.send(JSON.stringify({ type: 'caption', speaker: 'Alice Interviewer', text: 'So, can you walk me through your most recent project?', ts: Date.now(), isFinal: true }));
+ws.send(
+  JSON.stringify({
+    type: 'caption',
+    speaker: 'Alice Interviewer',
+    text: 'So, can you walk me through your most recent project?',
+    ts: Date.now(),
+    isFinal: true,
+  }),
+);
 await wait(1200);
-ws.send(JSON.stringify({ type: 'caption', speaker: 'You', text: 'Sure, at my last company I led the migration to a new billing system.', ts: Date.now(), isFinal: true }));
+ws.send(
+  JSON.stringify({
+    type: 'caption',
+    speaker: 'You',
+    text: 'Sure, at my last company I led the migration to a new billing system.',
+    ts: Date.now(),
+    isFinal: true,
+  }),
+);
 log('streamed captions; audio bytes sent so far', sent);
 if (leaveAfter > 0) {
   await wait(leaveAfter);

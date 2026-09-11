@@ -27,6 +27,13 @@ export async function bootServices(ctx: AppContext): Promise<void> {
   await ctx.extension.start();
 
   // Placeholders replaced by real services in later milestones.
-  handle('diagnostics:get', () => ({ latency: ctx.db.listLatency(), transcriberStats: ctx.transcription.statsSnapshot(), speculativeRestartRate: ctx.answers.speculativeStarts ? ctx.answers.restarts / ctx.answers.speculativeStarts : 0, cache: ctx.answers.cacheStatus() }));
+  handle('diagnostics:get', () => ({
+    latency: ctx.db.listLatency(),
+    transcriberStats: ctx.transcription.statsSnapshot(),
+    speculativeRestartRate: ctx.answers.speculativeStarts
+      ? ctx.answers.restarts / ctx.answers.speculativeStarts
+      : 0,
+    cache: ctx.answers.cacheStatus(),
+  }));
   handle('diagnostics:clear', () => ctx.db.clearLatency());
 }

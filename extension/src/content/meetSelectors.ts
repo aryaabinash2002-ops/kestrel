@@ -14,7 +14,13 @@ export const SELECTORS = {
     'div[role="region"][aria-live]',
   ],
   /** One caption block (speaker + running text). */
-  captionEntry: ['[jsname="dsyhDe"] > div', '.nMcdL', '.TBMuR', '[data-caption-entry]', ':scope > div'],
+  captionEntry: [
+    '[jsname="dsyhDe"] > div',
+    '.nMcdL',
+    '.TBMuR',
+    '[data-caption-entry]',
+    ':scope > div',
+  ],
   /** Speaker name inside a caption block. */
   captionSpeaker: ['.NWpY1d', '.zs7s8d', '.KcIKyf', '[data-self-name]', 'span:first-child'],
   /** Caption text inside a caption block. */
@@ -31,7 +37,10 @@ export const SELECTORS = {
   selfNames: ['You', 'Tú', 'Vous', 'Du', 'Você', 'あなた', 'आप'],
 } as const;
 
-export function query<T extends Element = Element>(candidates: readonly string[], root: ParentNode = document): T | null {
+export function query<T extends Element = Element>(
+  candidates: readonly string[],
+  root: ParentNode = document,
+): T | null {
   for (const sel of candidates) {
     try {
       const el = root.querySelector<T>(sel);
@@ -43,7 +52,10 @@ export function query<T extends Element = Element>(candidates: readonly string[]
   return null;
 }
 
-export function queryAll<T extends Element = Element>(candidates: readonly string[], root: ParentNode): T[] {
+export function queryAll<T extends Element = Element>(
+  candidates: readonly string[],
+  root: ParentNode,
+): T[] {
   for (const sel of candidates) {
     try {
       const list = Array.from(root.querySelectorAll<T>(sel));

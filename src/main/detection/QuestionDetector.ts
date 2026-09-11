@@ -35,7 +35,10 @@ const TRIGGERS = [
   'is there',
   'any questions',
 ];
-const TRIGGER_RE = new RegExp(`(^|[^\\p{L}])(${TRIGGERS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/'/g, "['’]?")).join('|')})(?=$|[^\\p{L}])`, 'iu');
+const TRIGGER_RE = new RegExp(
+  `(^|[^\\p{L}])(${TRIGGERS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/'/g, "['’]?")).join('|')})(?=$|[^\\p{L}])`,
+  'iu',
+);
 
 export function looksLikeQuestion(text: string): boolean {
   const t = text.trim();
@@ -136,16 +139,36 @@ export class QuestionDetector extends EventEmitter {
         return;
       }
       this.emittedText = text;
-      this.emit('question', { key, text, speculative, questionEndTs: endTs } satisfies DetectedQuestion);
+      this.emit('question', {
+        key,
+        text,
+        speculative,
+        questionEndTs: endTs,
+      } satisfies DetectedQuestion);
       return;
     }
     if (text === this.emittedText) {
-      if (!speculative) this.emit('update', { key, text, speculative: false, questionEndTs: endTs, overlap: 1, restart: false } satisfies QuestionUpdate);
+      if (!speculative)
+        this.emit('update', {
+          key,
+          text,
+          speculative: false,
+          questionEndTs: endTs,
+          overlap: 1,
+          restart: false,
+        } satisfies QuestionUpdate);
       return;
     }
     const overlap = wordOverlap(this.emittedText, text);
     const restart = overlap < this.sameThreshold;
     if (restart) this.emittedText = text;
-    this.emit('update', { key, text, speculative, questionEndTs: endTs, overlap, restart } satisfies QuestionUpdate);
+    this.emit('update', {
+      key,
+      text,
+      speculative,
+      questionEndTs: endTs,
+      overlap,
+      restart,
+    } satisfies QuestionUpdate);
   }
 }

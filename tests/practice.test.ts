@@ -27,7 +27,14 @@ afterEach(async () => {
 
 function harness() {
   const db = new SessionDB(':memory:');
-  type Sess = { id: string; profileId: string | null; mode: string; startedAt: number; endedAt: number | null; summary: null };
+  type Sess = {
+    id: string;
+    profileId: string | null;
+    mode: string;
+    startedAt: number;
+    endedAt: number | null;
+    summary: unknown;
+  };
   let current: Sess | null = null;
   let listening = false;
   class FakeSessions extends EventEmitter {
@@ -70,7 +77,14 @@ function harness() {
   };
   const transcription = new EventEmitter();
   const llm = new LLMService({ get: async () => 'key' } as never);
-  const svc = new PracticeService({ llm, db, sessions: sessions as never, audio: audio as never, transcription: transcription as never, getSettings: () => DEFAULT_SETTINGS });
+  const svc = new PracticeService({
+    llm,
+    db,
+    sessions: sessions as never,
+    audio: audio as never,
+    transcription: transcription as never,
+    getSettings: () => DEFAULT_SETTINGS,
+  });
   const events: PracticeEvent[] = [];
   svc.on('event', (e: PracticeEvent) => events.push(e));
   return { svc, db, sessions, audioCalls, events, getListening: () => listening };
@@ -98,7 +112,16 @@ describe('question bank', () => {
   });
 
   it('scorer schema mirrors PracticeScore.score', () => {
-    expect(SCORE_SCHEMA.required).toEqual(['score', 'relevance', 'structure', 'specificity', 'conciseness', 'strengths', 'improve_one_thing', 'model_answer']);
+    expect(SCORE_SCHEMA.required).toEqual([
+      'score',
+      'relevance',
+      'structure',
+      'specificity',
+      'conciseness',
+      'strengths',
+      'improve_one_thing',
+      'model_answer',
+    ]);
     expect(SCORE_SCHEMA.additionalProperties).toBe(false);
   });
 });
@@ -118,7 +141,9 @@ describe('PracticeService', () => {
     expect(audioCalls).toEqual(['start:me']);
     expect(getListening()).toBe(true);
     expect(sessions.session?.id).toBe(state.session?.id);
-    const q = events.find((e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question')!;
+    const q = events.find(
+      (e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question',
+    )!;
     expect(q).toMatchObject({ index: 0, total: 3, category: 'coding' });
     expect(STATIC_BANKS.coding.questions).toContain(q.question);
     await svc.stop();
@@ -126,22 +151,33 @@ describe('PracticeService', () => {
 
   it('scores a submitted answer, stores it, emits score then the next question; finishes and stops audio/session', async () => {
     const { svc, events, db, audioCalls, sessions } = harness();
-    const state = await svc.start({ profileId: null, setId: 'behavioral', count: 2, useTts: false });
+    const state = await svc.start({
+      profileId: null,
+      setId: 'behavioral',
+      count: 2,
+      useTts: false,
+    });
     const sid = state.session!.id;
     await svc.submit('At Globex I led the billing migration to Stripe with zero downtime.');
     const types = events.map((e) => e.type);
     expect(types).toEqual(['question', 'scoring', 'score', 'question']);
-    const score = events.find((e): e is Extract<PracticeEvent, { type: 'score' }> => e.type === 'score')!.score;
+    const score = events.find(
+      (e): e is Extract<PracticeEvent, { type: 'score' }> => e.type === 'score',
+    )!.score;
     expect(score.score.score).toBe(7);
     expect(score.score.strengths).toEqual(['Clear outcome']);
     expect(score.score.model_answer).toContain('Globex');
     expect(score.sessionId).toBe(sid);
     expect(db.listPracticeScores(sid)).toHaveLength(1);
     expect(db.listPracticeScores(sid)[0]!.answer).toContain('billing migration');
-    const second = events.filter((e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question')[1]!;
+    const second = events.filter(
+      (e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question',
+    )[1]!;
     expect(second.index).toBe(1);
     // The scorer request carried the strict JSON schema and the question/answer.
-    const scoreReq = fake.requests.find((r) => JSON.stringify(r.body.output_config ?? {}).includes('improve_one_thing'))!;
+    const scoreReq = fake.requests.find((r) =>
+      JSON.stringify(r.body.output_config ?? {}).includes('improve_one_thing'),
+    )!;
     expect(scoreReq.body.model).toBe(DEFAULT_SETTINGS.models.heavy);
     expect(JSON.stringify(scoreReq.body.messages)).toContain('billing migration');
 
@@ -155,7 +191,12 @@ describe('PracticeService', () => {
 
   it('skip moves on without scoring and rejects empty answers', async () => {
     const { svc, events, db } = harness();
-    const state = await svc.start({ profileId: null, setId: 'system_design', count: 2, useTts: true });
+    const state = await svc.start({
+      profileId: null,
+      setId: 'system_design',
+      count: 2,
+      useTts: true,
+    });
     await svc.submit('   ');
     expect(events.some((e) => e.type === 'error')).toBe(true);
     await svc.skip();
@@ -168,12 +209,22 @@ describe('PracticeService', () => {
 
   it('falls back to behavioral questions for the role set when generation returns nothing', async () => {
     const { svc, db, events } = harness();
-    const p = db.saveProfile({ name: 'P', role: 'SRE', company: 'Acme', jdText: 'We need an SRE who owns reliability.', resumeText: 'Jane, SRE.' });
+    const p = db.saveProfile({
+      name: 'P',
+      role: 'SRE',
+      company: 'Acme',
+      jdText: 'We need an SRE who owns reliability.',
+      resumeText: 'Jane, SRE.',
+    });
     await svc.start({ profileId: p.id, setId: 'role', count: 2, useTts: false });
-    const q = events.find((e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question')!;
+    const q = events.find(
+      (e): e is Extract<PracticeEvent, { type: 'question' }> => e.type === 'question',
+    )!;
     expect(q.category).toBe('behavioral');
     // A generation request was attempted with the {questions} schema.
-    expect(fake.requests.some((r) => JSON.stringify(r.body.output_config ?? {}).includes('"questions"'))).toBe(true);
+    expect(
+      fake.requests.some((r) => JSON.stringify(r.body.output_config ?? {}).includes('"questions"')),
+    ).toBe(true);
     await svc.stop();
   });
 

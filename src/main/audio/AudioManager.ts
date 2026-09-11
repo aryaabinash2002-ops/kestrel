@@ -43,7 +43,10 @@ export function macSupportsLoopback(): boolean {
  */
 export class AudioManager extends EventEmitter {
   private nextId = 1;
-  private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }>();
+  private pending = new Map<
+    number,
+    { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }
+  >();
   private listening = false;
   private me: ChannelStatus = this.blank('ME');
   private them: ChannelStatus = this.blank('THEM');
@@ -67,8 +70,17 @@ export class AudioManager extends EventEmitter {
         ? payload.pcm
         : payload.pcm instanceof ArrayBuffer
           ? Buffer.from(payload.pcm)
-          : Buffer.from((payload.pcm as Uint8Array).buffer, (payload.pcm as Uint8Array).byteOffset, (payload.pcm as Uint8Array).byteLength);
-      this.emit('pcm', { channel: payload.channel, pcm, ts: payload.ts, source: 'local' } satisfies PcmChunk);
+          : Buffer.from(
+              (payload.pcm as Uint8Array).buffer,
+              (payload.pcm as Uint8Array).byteOffset,
+              (payload.pcm as Uint8Array).byteLength,
+            );
+      this.emit('pcm', {
+        channel: payload.channel,
+        pcm,
+        ts: payload.ts,
+        source: 'local',
+      } satisfies PcmChunk);
     });
   }
 
@@ -82,7 +94,12 @@ export class AudioManager extends EventEmitter {
   }
 
   state(): AudioState {
-    return { listening: this.listening, me: { ...this.me }, them: { ...this.them }, resolvedSystemMode: this.resolvedSystemMode };
+    return {
+      listening: this.listening,
+      me: { ...this.me },
+      them: { ...this.them },
+      resolvedSystemMode: this.resolvedSystemMode,
+    };
   }
 
   private publish(): void {
@@ -133,7 +150,11 @@ export class AudioManager extends EventEmitter {
         break;
       case 'devicechange':
         this.emit('devicechange');
-        emit('toast', { kind: 'info', title: 'Audio devices changed', message: 'Check Settings → Audio if a device was unplugged.' });
+        emit('toast', {
+          kind: 'info',
+          title: 'Audio devices changed',
+          message: 'Check Settings → Audio if a device was unplugged.',
+        });
         break;
       case 'trackEnded': {
         const st = ev.channel === 'ME' ? this.me : this.them;
@@ -146,7 +167,8 @@ export class AudioManager extends EventEmitter {
       }
       case 'warning': {
         const st = ev.channel === 'ME' ? this.me : this.them;
-        if (ev.warning === 'signal-restored') st.warnings = st.warnings.filter((w) => w !== 'no-signal');
+        if (ev.warning === 'signal-restored')
+          st.warnings = st.warnings.filter((w) => w !== 'no-signal');
         else if (!st.warnings.includes(ev.warning)) st.warnings.push(ev.warning);
         this.publish();
         break;
@@ -182,7 +204,8 @@ export class AudioManager extends EventEmitter {
     this.extensionCapturing = flag;
     if (this.listening && this.themEnabled) {
       const mode = this.getSettings().audio.systemAudioMode;
-      if (mode === 'auto' || mode === 'extension') void this.withCaptureVisible(() => this.startThem());
+      if (mode === 'auto' || mode === 'extension')
+        void this.withCaptureVisible(() => this.startThem());
     }
   }
 
@@ -257,7 +280,10 @@ export class AudioManager extends EventEmitter {
     this.listening = false;
     for (const t of Object.values(this.restartTimers)) clearTimeout(t);
     this.restartTimers = {};
-    await Promise.allSettled([this.request({ type: 'stopMic' }), this.request({ type: 'stopSystem' })]);
+    await Promise.allSettled([
+      this.request({ type: 'stopMic' }),
+      this.request({ type: 'stopSystem' }),
+    ]);
     this.me = this.blank('ME');
     this.them = this.blank('THEM');
     this.resolvedSystemMode = null;
@@ -270,7 +296,10 @@ export class AudioManager extends EventEmitter {
     const s = this.getSettings();
     this.me = { ...this.blank('ME'), source: 'mic' };
     try {
-      const r = await this.request<StartResult>({ type: 'startMic', deviceId: s.audio.micDeviceId }, 30000);
+      const r = await this.request<StartResult>(
+        { type: 'startMic', deviceId: s.audio.micDeviceId },
+        30000,
+      );
       this.me.active = true;
       this.me.deviceLabel = r.label;
       this.me.warnings = r.warnings;
@@ -306,7 +335,9 @@ export class AudioManager extends EventEmitter {
       return;
     }
 
-    const useDevice = mode === 'device' || (mode === 'auto' && !macSupportsLoopback() && s.audio.systemInputDeviceId);
+    const useDevice =
+      mode === 'device' ||
+      (mode === 'auto' && !macSupportsLoopback() && s.audio.systemInputDeviceId);
     if (useDevice) {
       this.resolvedSystemMode = 'device';
       this.them.source = 'device';
@@ -314,7 +345,10 @@ export class AudioManager extends EventEmitter {
         this.them.error = 'Pick a virtual input device in Settings → Audio';
       } else {
         try {
-          const r = await this.request<StartResult>({ type: 'startDevice', deviceId: s.audio.systemInputDeviceId }, 30000);
+          const r = await this.request<StartResult>(
+            { type: 'startDevice', deviceId: s.audio.systemInputDeviceId },
+            30000,
+          );
           this.them.active = true;
           this.them.deviceLabel = r.label;
         } catch (err) {
@@ -328,7 +362,8 @@ export class AudioManager extends EventEmitter {
     this.resolvedSystemMode = 'loopback';
     this.them.source = 'loopback';
     if (!macSupportsLoopback()) {
-      this.them.error = 'System audio needs macOS 14.2+ — use BlackHole (virtual device) or the Meet extension';
+      this.them.error =
+        'System audio needs macOS 14.2+ — use BlackHole (virtual device) or the Meet extension';
       this.publish();
       return;
     }
@@ -392,7 +427,8 @@ export class AudioManager extends EventEmitter {
 
 function humanizeMicError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  if (/NotAllowedError|Permission denied|permission/i.test(msg)) return 'Microphone permission denied';
+  if (/NotAllowedError|Permission denied|permission/i.test(msg))
+    return 'Microphone permission denied';
   if (/NotFoundError|Requested device not found/i.test(msg)) return 'Microphone not found';
   if (/NotReadableError|Could not start/i.test(msg)) return 'Microphone busy (used by another app)';
   return msg;

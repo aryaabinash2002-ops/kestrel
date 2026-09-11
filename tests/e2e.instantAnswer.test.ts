@@ -13,7 +13,10 @@ import { DEFAULT_SETTINGS, type Settings } from '@shared/types/settings';
 import { FakeDeepgramServer } from './fakes/fakeDeepgram';
 import { startFakeAnthropic, type FakeAnthropic } from './fakes/fakeAnthropic';
 
-vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] }, ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} } }));
+vi.mock('electron', () => ({
+  BrowserWindow: { getAllWindows: () => [] },
+  ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} },
+}));
 
 const { TranscriptionService } = await import('@main/transcription/TranscriptionService');
 const { DeepgramTranscriber } = await import('@main/transcription/DeepgramTranscriber');
@@ -66,7 +69,14 @@ function pipeline(settingsPatch: Partial<Settings> = {}) {
   const startedAt = Date.now();
   const transcript: Utterance[] = [];
   const sessions = Object.assign(new EventEmitter(), {
-    session: { id: 'sess_e2e', startedAt, profileId: null, mode: 'live', endedAt: null, summary: null },
+    session: {
+      id: 'sess_e2e',
+      startedAt,
+      profileId: null,
+      mode: 'live',
+      endedAt: null,
+      summary: null,
+    },
     activeProfile: null,
     sessionStartedAt: startedAt,
     nowMs: () => Date.now() - startedAt,
@@ -80,18 +90,50 @@ function pipeline(settingsPatch: Partial<Settings> = {}) {
   });
   const audio = Object.assign(new EventEmitter(), { state: () => ({ them: { active: true } }) });
   const secrets = { get: async () => 'key' };
-  const transcription = new TranscriptionService(sessions as never, audio as never, secrets as never, () => settings, (opts) =>
-    opts.channel === 'THEM' ? new DeepgramTranscriber({ ...opts, endpoint: dg.url }) : new SilentTranscriber(opts.channel),
+  const transcription = new TranscriptionService(
+    sessions as never,
+    audio as never,
+    secrets as never,
+    () => settings,
+    (opts) =>
+      opts.channel === 'THEM'
+        ? new DeepgramTranscriber({ ...opts, endpoint: dg.url })
+        : new SilentTranscriber(opts.channel),
   );
   const saved: AnswerCard[] = [];
   const latency: LatencySample[] = [];
-  const db = { saveAnswer: (c: AnswerCard) => saved.push({ ...c }), saveLatency: (s: LatencySample) => latency.push(s) };
+  const db = {
+    saveAnswer: (c: AnswerCard) => saved.push({ ...c }),
+    saveLatency: (s: LatencySample) => latency.push(s),
+  };
   const llm = new LLMService(secrets as never);
-  const engine = new AnswerEngine({ llm, sessions: sessions as never, db: db as never, getSettings: () => settings });
-  const auto = new AutoAnswer(transcription, sessions as never, engine, new Classifier(llm, () => settings), () => settings);
+  const engine = new AnswerEngine({
+    llm,
+    sessions: sessions as never,
+    db: db as never,
+    getSettings: () => settings,
+  });
+  const auto = new AutoAnswer(
+    transcription,
+    sessions as never,
+    engine,
+    new Classifier(llm, () => settings),
+    () => settings,
+  );
   const events: AnswerEvent[] = [];
   engine.on('card', (e: AnswerEvent) => e.type !== 'clear' && events.push(e));
-  return { sessions, audio, transcription, engine, auto, events, saved, latency, transcript, startedAt };
+  return {
+    sessions,
+    audio,
+    transcription,
+    engine,
+    auto,
+    events,
+    saved,
+    latency,
+    transcript,
+    startedAt,
+  };
 }
 
 /** Stream the WAV fixture in real time (80 ms chunks) through the audio emitter. */
@@ -107,7 +149,12 @@ function streamFixture(audio: EventEmitter): { bytes: number; done: Promise<void
         r();
         return;
       }
-      audio.emit('pcm', { channel: 'THEM', pcm: pcm.subarray(off, off + chunk), ts: Date.now(), source: 'local' });
+      audio.emit('pcm', {
+        channel: 'THEM',
+        pcm: pcm.subarray(off, off + chunk),
+        ts: Date.now(),
+        source: 'local',
+      });
       off += chunk;
     }, 80);
   });
@@ -132,20 +179,32 @@ describe('instant answer pipeline (E2E)', () => {
     await wait(250);
     dg.results('can you tell me about a time you led a', { start: 0.2, end: 2.0 });
     await wait(250);
-    dg.results('can you tell me about a time you led a difficult migration', { start: 0.2, end: 2.6 });
+    dg.results('can you tell me about a time you led a difficult migration', {
+      start: 0.2,
+      end: 2.6,
+    });
     // 350 ms of stability → speculative start.
     await until(() => p.events.some((e) => e.type === 'start'), 1500);
-    const startEvent = p.events.find((e): e is Extract<AnswerEvent, { type: 'start' }> => e.type === 'start')!;
+    const startEvent = p.events.find(
+      (e): e is Extract<AnswerEvent, { type: 'start' }> => e.type === 'start',
+    )!;
     expect(startEvent.card.latency.speculative).toBe(true);
     expect(p.transcript.filter((u) => u.isFinal)).toHaveLength(0); // no final yet: truly speculative
     const finalSentAt = Date.now();
-    dg.results('Can you tell me about a time you led a difficult migration?', { isFinal: true, speechFinal: true, start: 0.2, end: 3.0 });
+    dg.results('Can you tell me about a time you led a difficult migration?', {
+      isFinal: true,
+      speechFinal: true,
+      start: 0.2,
+      end: 3.0,
+    });
     await done;
     await until(() => p.events.some((e) => e.type === 'done'));
     // The final matched (≥80 % overlap): no restart, no cancellation, single card.
     expect(p.events.filter((e) => e.type === 'start')).toHaveLength(1);
     expect(p.events.filter((e) => e.type === 'cancelled')).toHaveLength(0);
-    const doneEv = p.events.find((e): e is Extract<AnswerEvent, { type: 'done' }> => e.type === 'done')!;
+    const doneEv = p.events.find(
+      (e): e is Extract<AnswerEvent, { type: 'done' }> => e.type === 'done',
+    )!;
     expect(doneEv.card.headline).toContain('Globex');
     expect(doneEv.card.points.length).toBeGreaterThanOrEqual(3);
     // First token came before or within 1 s of the question's end.
@@ -153,7 +212,9 @@ describe('instant answer pipeline (E2E)', () => {
     expect(ft).toBeLessThan(finalSentAt + 1000);
     // The classifier ran in parallel and labelled the card without delaying it.
     await until(() => p.events.some((e) => e.type === 'classified'));
-    const cls = p.events.find((e): e is Extract<AnswerEvent, { type: 'classified' }> => e.type === 'classified')!;
+    const cls = p.events.find(
+      (e): e is Extract<AnswerEvent, { type: 'classified' }> => e.type === 'classified',
+    )!;
     expect(cls.questionType).toBe('behavioral');
     expect(cls.isQuestion).toBe(true);
     // Transcript persisted through the session manager, audio fully delivered to the provider.
@@ -165,7 +226,9 @@ describe('instant answer pipeline (E2E)', () => {
     expect(p.latency).toHaveLength(1);
     expect(p.latency[0]!.speculative).toBe(true);
     // Both request kinds hit the LLM: warm-up (max_tokens 1), the streamed answer, the JSON classifier.
-    const kinds = llmServer.requests.map((r) => (r.body.max_tokens === 1 ? 'warm' : r.body.stream ? 'answer' : 'classify'));
+    const kinds = llmServer.requests.map((r) =>
+      r.body.max_tokens === 1 ? 'warm' : r.body.stream ? 'answer' : 'classify',
+    );
     expect(kinds).toContain('warm');
     expect(kinds).toContain('answer');
     expect(kinds).toContain('classify');
@@ -180,9 +243,14 @@ describe('instant answer pipeline (E2E)', () => {
     dg.results('what would you do if a deploy failed', { start: 0, end: 1.5 });
     await until(() => p.events.some((e) => e.type === 'start'), 1500);
     await wait(200);
-    dg.results('What would you do if a deploy failed at 2 a.m., the on-call engineer is unreachable and customers are down?', { isFinal: true, speechFinal: true, start: 0, end: 4.5 });
+    dg.results(
+      'What would you do if a deploy failed at 2 a.m., the on-call engineer is unreachable and customers are down?',
+      { isFinal: true, speechFinal: true, start: 0, end: 4.5 },
+    );
     await until(() => p.events.some((e) => e.type === 'done'), 8000);
-    const starts = p.events.filter((e): e is Extract<AnswerEvent, { type: 'start' }> => e.type === 'start');
+    const starts = p.events.filter(
+      (e): e is Extract<AnswerEvent, { type: 'start' }> => e.type === 'start',
+    );
     expect(starts).toHaveLength(2);
     expect(starts[1]!.card.id).toBe(starts[0]!.card.id); // swapped in place
     expect(starts[1]!.card.latency.restarted).toBe(true);
@@ -198,15 +266,27 @@ describe('instant answer pipeline (E2E)', () => {
     p.sessions.emit('started');
     await until(() => dg.clients.length === 1);
     dg.results('okay great thanks for that', { start: 0, end: 1 });
-    dg.results('Okay great, thanks for that.', { isFinal: true, speechFinal: true, start: 0, end: 1.2 });
+    dg.results('Okay great, thanks for that.', {
+      isFinal: true,
+      speechFinal: true,
+      start: 0,
+      end: 1.2,
+    });
     await wait(600);
     expect(p.events.filter((e) => e.type === 'start')).toHaveLength(0);
 
     dg.results('how are you doing today', { start: 2, end: 3 });
     await until(() => p.events.some((e) => e.type === 'start'), 1500); // heuristic fires…
-    dg.results('How are you doing today?', { isFinal: true, speechFinal: true, start: 2, end: 3.1 });
+    dg.results('How are you doing today?', {
+      isFinal: true,
+      speechFinal: true,
+      start: 2,
+      end: 3.1,
+    });
     await until(() => p.events.some((e) => e.type === 'chip'), 4000); // …the classifier vetoes it into a chip
-    const chip = p.events.find((e): e is Extract<AnswerEvent, { type: 'chip' }> => e.type === 'chip')!;
+    const chip = p.events.find(
+      (e): e is Extract<AnswerEvent, { type: 'chip' }> => e.type === 'chip',
+    )!;
     expect(chip.question.toLowerCase()).toContain('how are you');
     expect(p.engine.current().filter((c) => c.status === 'done')).toHaveLength(0);
     p.sessions.emit('ended');

@@ -1,6 +1,7 @@
 import type { Channel } from './session';
 
-export type TranscriberStatus = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed' | 'error';
+export type TranscriberStatus =
+  'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed' | 'error';
 
 export interface TranscriptionState {
   channel: Channel;

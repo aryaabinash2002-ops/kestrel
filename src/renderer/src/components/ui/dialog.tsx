@@ -30,9 +30,18 @@ export const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = 'DialogContent';
 
-export const DialogTitle = ({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) => (
+export const DialogTitle = ({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) => (
   <DialogPrimitive.Title className={cn('text-sm font-semibold', className)} {...props} />
 );
-export const DialogDescription = ({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) => (
-  <DialogPrimitive.Description className={cn('text-xs text-muted-foreground', className)} {...props} />
+export const DialogDescription = ({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) => (
+  <DialogPrimitive.Description
+    className={cn('text-xs text-muted-foreground', className)}
+    {...props}
+  />
 );

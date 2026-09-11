@@ -8,7 +8,15 @@ import type { SessionManager } from '../session/SessionManager';
 import { emit } from '../ipc';
 import { logger } from '../logger';
 import { DEFAULT_PROMPTS, renderTemplate } from '../prompts';
-import { buildLivePrompt, buildSystemPrefix, cacheMinimumTokens, estimateTokens, formatTranscript, profileToContext, type ContextProfile } from './ContextBuilder';
+import {
+  buildLivePrompt,
+  buildSystemPrefix,
+  cacheMinimumTokens,
+  estimateTokens,
+  formatTranscript,
+  profileToContext,
+  type ContextProfile,
+} from './ContextBuilder';
 import type { LLMService } from './LLMService';
 import { cleanInline, parseAnswer } from './parseAnswer';
 
@@ -117,10 +125,14 @@ export class AnswerEngine extends EventEmitter {
     const cacheMinimum = cacheMinimumTokens(s.models.live);
     const cached = prefixTokens >= cacheMinimum;
     this.cacheInfo = { cached, prefixTokens, cacheMinimum };
-    log.info(`prefix ≈${prefixTokens} tokens, cache ${cached ? 'on' : `off (min ${cacheMinimum} for ${s.models.live})`}`);
+    log.info(
+      `prefix ≈${prefixTokens} tokens, cache ${cached ? 'on' : `off (min ${cacheMinimum} for ${s.models.live})`}`,
+    );
     await this.deps.llm.warm(
       s.models.live,
-      cached ? [{ type: 'text', text: prefix, cache_control: { type: 'ephemeral' } }] : [{ type: 'text', text: prefix }],
+      cached
+        ? [{ type: 'text', text: prefix, cache_control: { type: 'ephemeral' } }]
+        : [{ type: 'text', text: prefix }],
     );
   }
 
@@ -137,14 +149,25 @@ export class AnswerEngine extends EventEmitter {
   answerNow(): void {
     const sm = this.deps.sessions;
     if (!sm.session) {
-      emit('toast', { kind: 'warning', title: 'No active session', message: 'Start listening first.' });
+      emit('toast', {
+        kind: 'warning',
+        title: 'No active session',
+        message: 'Start listening first.',
+      });
       return;
     }
     const nowMs = sm.nowMs();
     const recent = sm.all().filter((u) => u.speaker === 'THEM' && nowMs - u.endMs <= 30000);
-    const text = recent.map((u) => u.text).join(' ').trim();
+    const text = recent
+      .map((u) => u.text)
+      .join(' ')
+      .trim();
     if (!text) {
-      emit('toast', { kind: 'warning', title: 'Nothing to answer yet', message: 'No speech from the other party in the last 30 seconds.' });
+      emit('toast', {
+        kind: 'warning',
+        title: 'Nothing to answer yet',
+        message: 'No speech from the other party in the last 30 seconds.',
+      });
       return;
     }
     const last = recent[recent.length - 1];
@@ -180,7 +203,11 @@ export class AnswerEngine extends EventEmitter {
         return;
       }
       this.cancelActive(req.restartOf ? 'restarted with fuller question' : 'newer question');
-    } else if (now - this.lastAutoAt < MIN_AUTO_GAP_MS && wordOverlap(this.lastAutoQuestion, req.question) < 0.8 && !req.restartOf) {
+    } else if (
+      now - this.lastAutoAt < MIN_AUTO_GAP_MS &&
+      wordOverlap(this.lastAutoQuestion, req.question) < 0.8 &&
+      !req.restartOf
+    ) {
       // Interviewer rephrasing quickly: wait, then answer the latest version.
       this.queued = req;
       setTimeout(() => this.drainQueue(), MIN_AUTO_GAP_MS - (now - this.lastAutoAt));
@@ -204,7 +231,11 @@ export class AnswerEngine extends EventEmitter {
 
   activeQuestion(): { id: string; question: string; speculative: boolean } | null {
     if (!this.active || this.active.done) return null;
-    return { id: this.active.card.id, question: this.active.card.question, speculative: this.active.card.latency.speculative };
+    return {
+      id: this.active.card.id,
+      question: this.active.card.question,
+      speculative: this.active.card.latency.speculative,
+    };
   }
 
   cancel(id?: string, reason = 'cancelled'): void {
@@ -294,7 +325,9 @@ export class AnswerEngine extends EventEmitter {
     if (this.cards.length > 40) this.cards.pop();
     this.emitEvent({ type: 'start', card });
 
-    const prompt = req.chat ? this.buildChatPrompt(req.question, model) : this.buildLive(req.question, model);
+    const prompt = req.chat
+      ? this.buildChatPrompt(req.question, model)
+      : this.buildLive(req.question, model);
     try {
       const result = await this.deps.llm.stream({
         model,
@@ -322,11 +355,19 @@ export class AnswerEngine extends EventEmitter {
           } else {
             const parsed = parseAnswer(full);
             card.headline = cleanInline(parsed.headline);
-            card.points = [...parsed.points.map(cleanInline), ...(parsed.partialPoint ? [cleanInline(parsed.partialPoint)] : [])];
+            card.points = [
+              ...parsed.points.map(cleanInline),
+              ...(parsed.partialPoint ? [cleanInline(parsed.partialPoint)] : []),
+            ];
             if (parsed.headlineDone && !active.headlineEmitted && card.headline) {
               active.headlineEmitted = true;
               card.latency.headlineDoneTs = Date.now();
-              this.emitEvent({ type: 'headline', id: card.id, headline: card.headline, ts: card.latency.headlineDoneTs });
+              this.emitEvent({
+                type: 'headline',
+                id: card.id,
+                headline: card.headline,
+                ts: card.latency.headlineDoneTs,
+              });
             }
           }
           this.throttledDelta(active);
@@ -347,7 +388,10 @@ export class AnswerEngine extends EventEmitter {
       card.model = result.model;
       this.deps.db.saveAnswer(card);
       this.recordLatency(card);
-      const ftl = card.latency.firstTokenTs && card.latency.questionEndTs ? card.latency.firstTokenTs - card.latency.questionEndTs : null;
+      const ftl =
+        card.latency.firstTokenTs && card.latency.questionEndTs
+          ? card.latency.firstTokenTs - card.latency.questionEndTs
+          : null;
       log.info(
         `answer ${card.id} done in ${card.latency.doneTs - requestStartTs} ms` +
           (ftl !== null ? `, first token ${ftl} ms after question end` : '') +
@@ -385,7 +429,8 @@ export class AnswerEngine extends EventEmitter {
     if (a.emitTimer) clearTimeout(a.emitTimer);
     a.card.status = 'cancelled';
     this.emitEvent({ type: 'cancelled', id: a.card.id, reason: fade ? 'not-a-question' : reason });
-    if (fade || !(a.card.headline || a.card.content)) this.cards = this.cards.filter((c) => c.id !== a.card.id);
+    if (fade || !(a.card.headline || a.card.content))
+      this.cards = this.cards.filter((c) => c.id !== a.card.id);
     this.active = null;
     log.debug('cancelled answer', a.card.id, reason);
   }
@@ -415,15 +460,18 @@ export class AnswerEngine extends EventEmitter {
     } else {
       a.pendingEvent = ev;
       if (!a.emitTimer) {
-        a.emitTimer = setTimeout(() => {
-          a.emitTimer = null;
-          if (a.pendingEvent) {
-            a.lastEmit = Date.now();
-            const p = a.pendingEvent;
-            a.pendingEvent = null;
-            this.emitEvent(p);
-          }
-        }, EMIT_INTERVAL_MS - (now - a.lastEmit));
+        a.emitTimer = setTimeout(
+          () => {
+            a.emitTimer = null;
+            if (a.pendingEvent) {
+              a.lastEmit = Date.now();
+              const p = a.pendingEvent;
+              a.pendingEvent = null;
+              this.emitEvent(p);
+            }
+          },
+          EMIT_INTERVAL_MS - (now - a.lastEmit),
+        );
       }
     }
   }
@@ -432,7 +480,14 @@ export class AnswerEngine extends EventEmitter {
     if (a.emitTimer) clearTimeout(a.emitTimer);
     a.emitTimer = null;
     a.pendingEvent = null;
-    this.emitEvent({ type: 'delta', id: a.card.id, text: '', headline: a.card.headline, points: a.card.points, content: a.card.content });
+    this.emitEvent({
+      type: 'delta',
+      id: a.card.id,
+      text: '',
+      headline: a.card.headline,
+      points: a.card.points,
+      content: a.card.content,
+    });
   }
 
   private emitEvent(ev: AnswerEvent): void {
@@ -471,11 +526,22 @@ export class AnswerEngine extends EventEmitter {
 
   private buildChatPrompt(text: string, model: string) {
     const sm = this.deps.sessions;
-    const base = buildLivePrompt({ template: this.template(), profile: this.profileCtx!, model, utterances: sm.finals(), nowMs: sm.nowMs(), summary: this.summary, question: text });
+    const base = buildLivePrompt({
+      template: this.template(),
+      profile: this.profileCtx!,
+      model,
+      utterances: sm.finals(),
+      nowMs: sm.nowMs(),
+      summary: this.summary,
+      question: text,
+    });
     const previous = this.cards
       .filter((c) => c.status === 'done' && c.kind !== 'chat')
       .slice(0, 3)
-      .map((c) => `Q: ${c.question}\nSuggested: ${c.headline}${c.points.length ? '\n- ' + c.points.join('\n- ') : ''}`)
+      .map(
+        (c) =>
+          `Q: ${c.question}\nSuggested: ${c.headline}${c.points.length ? '\n- ' + c.points.join('\n- ') : ''}`,
+      )
       .join('\n\n');
     const user =
       base.user.replace(/Question: [\s\S]*$/, '') +
@@ -491,10 +557,14 @@ export class AnswerEngine extends EventEmitter {
     if (!sm.session) return;
     const nowMs = sm.nowMs();
     const cutoff = nowMs - 5 * 60 * 1000;
-    const older: Utterance[] = sm.finals().filter((u) => u.endMs <= cutoff && u.endMs > this.summarizedUntilMs);
+    const older: Utterance[] = sm
+      .finals()
+      .filter((u) => u.endMs <= cutoff && u.endMs > this.summarizedUntilMs);
     if (older.length < 4) return;
     const s = this.deps.getSettings();
-    const text = (this.summary ? `Previous summary:\n${this.summary}\n\nNew transcript:\n` : '') + formatTranscript(older, nowMs, Number.MAX_SAFE_INTEGER, 12000);
+    const text =
+      (this.summary ? `Previous summary:\n${this.summary}\n\nNew transcript:\n` : '') +
+      formatTranscript(older, nowMs, Number.MAX_SAFE_INTEGER, 12000);
     try {
       let out = '';
       await this.deps.llm.stream({

@@ -12,19 +12,19 @@ import { HotkeyManager } from './hotkeys';
 import type { AppContext } from './context';
 import { registerCoreHandlers } from './handlers/core';
 import { emit } from './ipc';
-import { bootServices } from "./services";
-import { attachSmokeTest } from "./smoke";
-import { SessionManager } from "./session/SessionManager";
-import { AudioManager } from "./audio/AudioManager";
-import { TranscriptionService } from "./transcription/TranscriptionService";
-import { ExtensionBridge } from "./extension/ExtensionBridge";
-import { LLMService } from "./llm/LLMService";
-import { AnswerEngine } from "./llm/AnswerEngine";
-import { AutoAnswer } from "./llm/AutoAnswer";
-import { Classifier } from "./llm/Classifier";
-import { ScreenshotService } from "./screenshot/ScreenshotService";
-import { ReviewService } from "./review/ReviewService";
-import { PracticeService } from "./practice/PracticeService";
+import { bootServices } from './services';
+import { attachSmokeTest } from './smoke';
+import { SessionManager } from './session/SessionManager';
+import { AudioManager } from './audio/AudioManager';
+import { TranscriptionService } from './transcription/TranscriptionService';
+import { ExtensionBridge } from './extension/ExtensionBridge';
+import { LLMService } from './llm/LLMService';
+import { AnswerEngine } from './llm/AnswerEngine';
+import { AutoAnswer } from './llm/AutoAnswer';
+import { Classifier } from './llm/Classifier';
+import { ScreenshotService } from './screenshot/ScreenshotService';
+import { ReviewService } from './review/ReviewService';
+import { PracticeService } from './practice/PracticeService';
 
 const log = logger.scope('main');
 
@@ -57,8 +57,13 @@ async function boot(): Promise<void> {
   const bootstrapPaths = new Paths(null);
   const paths = new Paths(readSettingsDataDir(bootstrapPaths.settingsFile));
   paths.ensure();
-  logger.init(paths.logsDir, { minLevel: is.dev ? 'debug' : 'info', consoleLevel: is.dev ? 'debug' : 'warn' });
-  log.info(`Kestrel ${app.getVersion()} starting (electron ${process.versions.electron}, ${process.platform} ${process.arch})`);
+  logger.init(paths.logsDir, {
+    minLevel: is.dev ? 'debug' : 'info',
+    consoleLevel: is.dev ? 'debug' : 'warn',
+  });
+  log.info(
+    `Kestrel ${app.getVersion()} starting (electron ${process.versions.electron}, ${process.platform} ${process.arch})`,
+  );
 
   const settings = new SettingsStore(paths.settingsFile);
   const secrets = new SecretStore(paths.secretsFile);
@@ -67,7 +72,10 @@ async function boot(): Promise<void> {
   const windows = new WindowManager(() => settings.get());
   const hotkeys = new HotkeyManager();
   const sessions = new SessionManager(db);
-  const audio = new AudioManager(() => windows.capture, () => settings.get());
+  const audio = new AudioManager(
+    () => windows.capture,
+    () => settings.get(),
+  );
   const transcription = new TranscriptionService(sessions, audio, secrets, () => settings.get());
   const extension = new ExtensionBridge({
     getPort: () => settings.get().extensionPort,
@@ -78,10 +86,30 @@ async function boot(): Promise<void> {
   });
   const llm = new LLMService(secrets);
   const answers = new AnswerEngine({ llm, sessions, db, getSettings: () => settings.get() });
-  const auto = new AutoAnswer(transcription, sessions, answers, new Classifier(llm, () => settings.get()), () => settings.get());
-  const screenshots = new ScreenshotService({ llm, sessions, db, windows, paths, getSettings: () => settings.get() });
+  const auto = new AutoAnswer(
+    transcription,
+    sessions,
+    answers,
+    new Classifier(llm, () => settings.get()),
+    () => settings.get(),
+  );
+  const screenshots = new ScreenshotService({
+    llm,
+    sessions,
+    db,
+    windows,
+    paths,
+    getSettings: () => settings.get(),
+  });
   const review = new ReviewService({ llm, db, paths, windows, getSettings: () => settings.get() });
-  const practice = new PracticeService({ llm, db, sessions, audio, transcription, getSettings: () => settings.get() });
+  const practice = new PracticeService({
+    llm,
+    db,
+    sessions,
+    audio,
+    transcription,
+    getSettings: () => settings.get(),
+  });
 
   ctx = {
     paths,
@@ -169,10 +197,13 @@ process.on('unhandledRejection', (reason) => {
   log.error('unhandled rejection', reason);
 });
 
-app.whenReady().then(boot).catch((err) => {
-  log.error('boot failed', err);
-  console.error(err);
-});
+app
+  .whenReady()
+  .then(boot)
+  .catch((err) => {
+    log.error('boot failed', err);
+    console.error(err);
+  });
 
 app.on('before-quit', () => {
   if (ctx) ctx.windows.quitting = true;
@@ -195,4 +226,5 @@ export function getContext(): AppContext | null {
   return ctx;
 }
 
-export const resourcesDir = (): string => (app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'));
+export const resourcesDir = (): string =>
+  app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources');

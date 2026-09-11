@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { GraduationCap, Play, Volume2 } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@renderer/components/ui/card';
 import { Label } from '@renderer/components/ui/label';
 import { Select } from '@renderer/components/ui/select';
 import { Switch } from '@renderer/components/ui/switch';
@@ -34,7 +40,12 @@ export function PracticeSetup() {
 
   const begin = async () => {
     try {
-      await start({ profileId: profileId || null, setId, count: Number(count), useTts: useTts && ttsAvailable() });
+      await start({
+        profileId: profileId || null,
+        setId,
+        count: Number(count),
+        useTts: useTts && ttsAvailable(),
+      });
     } catch (err) {
       toast({ kind: 'error', title: 'Could not start practice', message: String(err) });
     }
@@ -48,17 +59,32 @@ export function PracticeSetup() {
         <CardTitle className="flex items-center gap-1.5">
           <GraduationCap className="size-4 text-primary" /> Mock interview
         </CardTitle>
-        <CardDescription>An AI interviewer asks questions out loud, listens to your spoken answer and scores it.</CardDescription>
+        <CardDescription>
+          An AI interviewer asks questions out loud, listens to your spoken answer and scores it.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1">
           <Label>Profile</Label>
-          <Select options={[{ value: '', label: 'No profile (generic questions)' }, ...profiles.map((p) => ({ value: p.id, label: p.name }))]} value={profileId} onValueChange={setProfileId} />
+          <Select
+            options={[
+              { value: '', label: 'No profile (generic questions)' },
+              ...profiles.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            value={profileId}
+            onValueChange={setProfileId}
+          />
         </div>
         <div className="space-y-1">
           <Label>Question set</Label>
-          <Select options={sets.map((s) => ({ value: s.id, label: s.label }))} value={setId} onValueChange={setSetId} />
-          {selectedSet && <p className="text-[11px] text-muted-foreground">{selectedSet.description}</p>}
+          <Select
+            options={sets.map((s) => ({ value: s.id, label: s.label }))}
+            value={setId}
+            onValueChange={setSetId}
+          />
+          {selectedSet && (
+            <p className="text-[11px] text-muted-foreground">{selectedSet.description}</p>
+          )}
         </div>
         <div className="grid grid-cols-2 items-end gap-3">
           <div className="space-y-1">
@@ -77,10 +103,19 @@ export function PracticeSetup() {
             <span className="flex items-center gap-1.5 text-sm">
               <Volume2 className="size-3.5" /> Read aloud
             </span>
-            <Switch checked={useTts && ttsAvailable()} disabled={!ttsAvailable()} onCheckedChange={setUseTts} />
+            <Switch
+              checked={useTts && ttsAvailable()}
+              disabled={!ttsAvailable()}
+              onCheckedChange={setUseTts}
+            />
           </div>
         </div>
-        {!hasAnthropic && <p className="text-[11px] text-warning">No Anthropic API key stored — scoring and role-specific questions need one (Settings → Keys).</p>}
+        {!hasAnthropic && (
+          <p className="text-[11px] text-warning">
+            No Anthropic API key stored — scoring and role-specific questions need one (Settings →
+            Keys).
+          </p>
+        )}
         <Button onClick={() => void begin()} disabled={phase === 'starting'}>
           <Play /> {phase === 'starting' ? 'Starting…' : 'Start practice'}
         </Button>

@@ -114,11 +114,21 @@ export default function Live() {
           </Button>
         )}
         {session && (
-          <Button size="sm" variant="outline" onClick={() => void invoke('answer:now')} title={`Answer the last 30 s (${prettyAccelerator(hotkeys.answerNow)})`}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void invoke('answer:now')}
+            title={`Answer the last 30 s (${prettyAccelerator(hotkeys.answerNow)})`}
+          >
             <Zap /> Answer now
           </Button>
         )}
-        <Button size="sm" variant="outline" onClick={() => void invoke('screenshot:solve', { region: true })} title={`Solve what's on screen (${prettyAccelerator(hotkeys.screenshotSolve)})`}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void invoke('screenshot:solve', { region: true })}
+          title={`Solve what's on screen (${prettyAccelerator(hotkeys.screenshotSolve)})`}
+        >
           <Camera /> {compact ? '' : 'Solve screen'}
         </Button>
         <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -141,13 +151,22 @@ export default function Live() {
 
       {!session ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-xs text-muted-foreground">
-          <p>Start listening to transcribe both sides of the call and get answers as questions come up.</p>
+          <p>
+            Start listening to transcribe both sides of the call and get answers as questions come
+            up.
+          </p>
           <p>
             {profile ? (
-              <>Profile: <b className="text-foreground">{profile.name}</b></>
+              <>
+                Profile: <b className="text-foreground">{profile.name}</b>
+              </>
             ) : (
               <>
-                No profile selected — answers will be generic. <Link to="/setup" className="text-primary underline">Set one up</Link>.
+                No profile selected — answers will be generic.{' '}
+                <Link to="/setup" className="text-primary underline">
+                  Set one up
+                </Link>
+                .
               </>
             )}
           </p>
@@ -167,7 +186,12 @@ export default function Live() {
                     key={c.id}
                     className="no-drag rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] hover:bg-accent"
                     title="Smalltalk — click to get a suggested reply"
-                    onClick={() => void invoke('answer:chat', `Give me a one-line friendly reply to: "${c.question}"`)}
+                    onClick={() =>
+                      void invoke(
+                        'answer:chat',
+                        `Give me a one-line friendly reply to: "${c.question}"`,
+                      )
+                    }
                   >
                     💬 {c.question}
                   </button>
@@ -176,7 +200,8 @@ export default function Live() {
             )}
             {visibleCards.length === 0 && screenshots.length === 0 && !pending && (
               <div className="py-8 text-center text-xs text-muted-foreground">
-                Answers appear here as questions are detected. Press <Kbd>{prettyAccelerator(hotkeys.answerNow)}</Kbd> to answer the last 30 seconds.
+                Answers appear here as questions are detected. Press{' '}
+                <Kbd>{prettyAccelerator(hotkeys.answerNow)}</Kbd> to answer the last 30 seconds.
               </div>
             )}
             <div className="space-y-2">
@@ -184,7 +209,14 @@ export default function Live() {
                 <ScreenshotCard key={sh.id} shot={sh} onDismiss={dismissScreenshot} />
               ))}
               {visibleCards.map((c, i) => (
-                <AnswerCard key={c.id} card={c} showLatency={showLatency} collapsedDefault={i >= 2} compact={compact} onDismiss={dismissCard} />
+                <AnswerCard
+                  key={c.id}
+                  card={c}
+                  showLatency={showLatency}
+                  collapsedDefault={i >= 2}
+                  compact={compact}
+                  onDismiss={dismissCard}
+                />
               ))}
             </div>
             {visibleCards.length > 1 && (
@@ -195,13 +227,38 @@ export default function Live() {
               </div>
             )}
           </div>
-          <div className={cn('shrink-0 border-t border-border/70 bg-card/40', transcriptOpen ? 'h-[32%] min-h-[120px]' : 'h-8')}>
-            <button className="no-drag flex h-8 w-full items-center gap-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground" onClick={() => setTranscriptOpen((v) => !v)}>
+          <div
+            className={cn(
+              'shrink-0 border-t border-border/70 bg-card/40',
+              transcriptOpen ? 'h-[32%] min-h-[120px]' : 'h-8',
+            )}
+          >
+            <button
+              className="no-drag flex h-8 w-full items-center gap-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
+              onClick={() => setTranscriptOpen((v) => !v)}
+            >
               Transcript
-              {!transcriptOpen && (interim.THEM || interim.ME) && <span className="ml-1 truncate normal-case tracking-normal opacity-70">{interim.THEM || interim.ME}</span>}
-              <span className="ml-auto">{transcriptOpen ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}</span>
+              {!transcriptOpen && (interim.THEM || interim.ME) && (
+                <span className="ml-1 truncate normal-case tracking-normal opacity-70">
+                  {interim.THEM || interim.ME}
+                </span>
+              )}
+              <span className="ml-auto">
+                {transcriptOpen ? (
+                  <ChevronDown className="size-3.5" />
+                ) : (
+                  <ChevronUp className="size-3.5" />
+                )}
+              </span>
             </button>
-            {transcriptOpen && <TranscriptView utterances={utterances} interim={interim} compact className="h-[calc(100%-2rem)] px-2 pb-2" />}
+            {transcriptOpen && (
+              <TranscriptView
+                utterances={utterances}
+                interim={interim}
+                compact
+                className="h-[calc(100%-2rem)] px-2 pb-2"
+              />
+            )}
           </div>
           <ChatBox compact={compact} />
         </>

@@ -36,7 +36,11 @@ async function parseDocx(data: Buffer): Promise<{ text: string }> {
 const MAX_CHARS = 60_000;
 
 /** Extract plain text from a PDF / DOCX / TXT / MD document (résumé or job description). */
-export async function parseDocument(source: { path?: string; base64?: string; filename: string }): Promise<ParsedDocument> {
+export async function parseDocument(source: {
+  path?: string;
+  base64?: string;
+  filename: string;
+}): Promise<ParsedDocument> {
   const data = source.path ? readFileSync(source.path) : Buffer.from(source.base64 ?? '', 'base64');
   const ext = extname(source.filename).toLowerCase();
   let text: string;
@@ -53,7 +57,10 @@ export async function parseDocument(source: { path?: string; base64?: string; fi
     text = data.toString('utf8');
   }
   text = cleanExtractedText(text);
-  if (!text) throw new Error('No text could be extracted (is it a scanned image? Try pasting the text instead).');
+  if (!text)
+    throw new Error(
+      'No text could be extracted (is it a scanned image? Try pasting the text instead).',
+    );
   if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS) + '\n…[truncated]';
   log.info(`parsed ${source.filename}: ${text.length} chars${pages ? `, ${pages} pages` : ''}`);
   return { text, filename: source.filename, pages, chars: text.length };

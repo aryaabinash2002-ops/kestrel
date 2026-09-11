@@ -25,7 +25,13 @@ const POINTS_RE = /^\s*\**\s*POINTS\s*:\**\s*$/i;
 const BULLET_RE = /^\s*(?:[-*•]|\d+[.)])\s+/;
 
 export function parseAnswer(text: string): ParsedAnswer {
-  const out: ParsedAnswer = { headline: '', headlineDone: false, points: [], partialPoint: '', extra: '' };
+  const out: ParsedAnswer = {
+    headline: '',
+    headlineDone: false,
+    points: [],
+    partialPoint: '',
+    extra: '',
+  };
   if (!text) return out;
   const lines = text.split('\n');
   const lastIdx = lines.length - 1;
@@ -84,5 +90,8 @@ export function parseAnswer(text: string): ParsedAnswer {
 
 /** Strip markdown emphasis the model sometimes adds despite instructions. */
 export function cleanInline(s: string): string {
-  return s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').trim();
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .trim();
 }

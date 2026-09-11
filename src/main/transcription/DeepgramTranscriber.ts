@@ -26,12 +26,21 @@ interface DgSpeechStarted {
   type: 'SpeechStarted';
   timestamp: number;
 }
-type DgMessage = DgResults | DgUtteranceEnd | DgSpeechStarted | { type: 'Metadata' } | { type: 'Error'; message?: string };
+type DgMessage =
+  | DgResults
+  | DgUtteranceEnd
+  | DgSpeechStarted
+  | { type: 'Metadata' }
+  | { type: 'Error'; message?: string };
 
 export const DEEPGRAM_DEFAULT_ENDPOINT = 'wss://api.deepgram.com/v1/listen';
 
 /** Query string per spec §5.1 — exported so tests can assert on it. */
-export function deepgramQuery(opts: { language: string; sampleRate: number; keyterms?: string[] }): string {
+export function deepgramQuery(opts: {
+  language: string;
+  sampleRate: number;
+  keyterms?: string[];
+}): string {
   const q = new URLSearchParams({
     model: 'nova-3',
     encoding: 'linear16',
@@ -118,7 +127,9 @@ export class DeepgramTranscriber extends BaseTranscriber {
           startWallMs: this.toWallMs(w.start),
           endWallMs: this.toWallMs(w.end),
         }));
-        const lastWordEnd = alt.words?.length ? alt.words[alt.words.length - 1]!.end : msg.start + msg.duration;
+        const lastWordEnd = alt.words?.length
+          ? alt.words[alt.words.length - 1]!.end
+          : msg.start + msg.duration;
         const result: TranscriptResult = {
           channel: this.channel,
           text,

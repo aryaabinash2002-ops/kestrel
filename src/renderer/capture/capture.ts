@@ -39,7 +39,9 @@ function log(message: string): void {
 
 function getWorkletUrl(): string {
   if (!workletUrl) {
-    workletUrl = URL.createObjectURL(new Blob([WORKLET_SOURCE], { type: 'application/javascript' }));
+    workletUrl = URL.createObjectURL(
+      new Blob([WORKLET_SOURCE], { type: 'application/javascript' }),
+    );
   }
   return workletUrl;
 }
@@ -52,8 +54,17 @@ async function listDevices(): Promise<AudioDevices> {
     kind: d.kind as AudioDevice['kind'],
     groupId: d.groupId,
   });
-  const inputs = all.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications').map(map);
-  const outputs = all.filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default' && d.deviceId !== 'communications').map(map);
+  const inputs = all
+    .filter(
+      (d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications',
+    )
+    .map(map);
+  const outputs = all
+    .filter(
+      (d) =>
+        d.kind === 'audiooutput' && d.deviceId !== 'default' && d.deviceId !== 'communications',
+    )
+    .map(map);
   // If labels are empty we have never been granted mic access — try once so pickers show names.
   if (inputs.length && inputs.every((d) => !d.label)) {
     try {
@@ -70,7 +81,10 @@ async function listDevices(): Promise<AudioDevices> {
 function isBluetoothHeadset(track: MediaStreamTrack): boolean {
   const label = track.label.toLowerCase();
   const settings = track.getSettings();
-  const lowRate = typeof settings.sampleRate === 'number' && settings.sampleRate > 0 && settings.sampleRate <= 16000;
+  const lowRate =
+    typeof settings.sampleRate === 'number' &&
+    settings.sampleRate > 0 &&
+    settings.sampleRate <= 16000;
   const btName = /airpods|bluetooth|hands-free|\bbt\b|buds|headset/.test(label);
   return btName && lowRate;
 }
@@ -102,7 +116,9 @@ async function attach(channel: Channel, stream: MediaStream, label: string): Pro
     levelTimer: 0,
     lastLevel: 0,
   };
-  node.port.onmessage = (ev: MessageEvent<{ type: 'chunk'; pcm: ArrayBuffer; rms: number; peak: number }>) => {
+  node.port.onmessage = (
+    ev: MessageEvent<{ type: 'chunk'; pcm: ArrayBuffer; rms: number; peak: number }>,
+  ) => {
     const msg = ev.data;
     if (msg.type !== 'chunk') return;
     window.kestrelCapture.pcm(channel, Date.now(), msg.pcm);
@@ -168,9 +184,15 @@ async function startMic(deviceId: string | null): Promise<{ label: string; warni
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
   } catch (err) {
-    if (deviceId && err instanceof Error && (err.name === 'OverconstrainedError' || err.name === 'NotFoundError')) {
+    if (
+      deviceId &&
+      err instanceof Error &&
+      (err.name === 'OverconstrainedError' || err.name === 'NotFoundError')
+    ) {
       // Device unplugged — fall back to default.
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { ...constraints, deviceId: undefined } });
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { ...constraints, deviceId: undefined },
+      });
     } else throw err;
   }
   log(`mic stream acquired (${stream.getAudioTracks().length} tracks)`);
@@ -188,7 +210,9 @@ async function startLoopback(): Promise<{ label: string; warnings: string[] }> {
     audio: true,
     video: { width: 2, height: 2, frameRate: 1 },
   });
-  log(`display stream acquired (audio ${stream.getAudioTracks().length}, video ${stream.getVideoTracks().length})`);
+  log(
+    `display stream acquired (audio ${stream.getAudioTracks().length}, video ${stream.getVideoTracks().length})`,
+  );
   stream.getVideoTracks().forEach((t) => {
     t.stop();
     stream.removeTrack(t);
@@ -251,12 +275,15 @@ window.kestrelCapture.onRequest(async (req) => {
     window.kestrelCapture.reply({ id: req.id, ok: true, result });
   } catch (err) {
     const e = err as Error & { name?: string };
-    const message = e?.name && e.name !== 'Error' ? `${e.name}: ${e.message}` : (e?.message ?? String(err));
+    const message =
+      e?.name && e.name !== 'Error' ? `${e.name}: ${e.message}` : (e?.message ?? String(err));
     log(`command ${req.cmd.type} failed: ${message}`);
     window.kestrelCapture.reply({ id: req.id, ok: false, error: message });
   }
 });
 
-navigator.mediaDevices.addEventListener('devicechange', () => window.kestrelCapture.event({ type: 'devicechange' }));
+navigator.mediaDevices.addEventListener('devicechange', () =>
+  window.kestrelCapture.event({ type: 'devicechange' }),
+);
 
 log('capture renderer ready');

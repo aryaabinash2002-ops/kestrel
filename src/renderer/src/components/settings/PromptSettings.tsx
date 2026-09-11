@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@renderer/components/ui/card';
 import { Button } from '@renderer/components/ui/button';
 import { Select } from '@renderer/components/ui/select';
 import { Textarea } from '@renderer/components/ui/textarea';
@@ -40,12 +46,18 @@ export function PromptSettings() {
       <CardHeader>
         <CardTitle>Prompts</CardTitle>
         <CardDescription>
-          Edit the templates the model receives. Variables in braces like <code>{'{role}'}</code> are filled in per session; <code>{'{if behavioral}…{/if}'}</code> blocks are conditional.
+          Edit the templates the model receives. Variables in braces like <code>{'{role}'}</code>{' '}
+          are filled in per session; <code>{'{if behavioral}…{/if}'}</code> blocks are conditional.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <Select options={NAMES} value={name} onValueChange={(v) => setName(v as PromptName)} />
-        <Textarea className="min-h-[260px] font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} />
+        <Textarea
+          className="min-h-[260px] font-mono text-xs"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          spellCheck={false}
+        />
         <div className="flex items-center gap-2">
           <Button
             size="sm"

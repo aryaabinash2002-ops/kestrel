@@ -1,6 +1,13 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AnswerCard, Profile, ScreenshotResult, Session, SessionSummary, Utterance } from '@shared/types/session';
+import type {
+  AnswerCard,
+  Profile,
+  ScreenshotResult,
+  Session,
+  SessionSummary,
+  Utterance,
+} from '@shared/types/session';
 import type { Settings } from '@shared/types/settings';
 import { formatMs } from '@shared/utils';
 import type { SessionDB } from '../db';
@@ -52,7 +59,11 @@ export interface ReviewDocument {
 }
 
 function strArr(v: unknown): string[] {
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((s) => s.trim()) : [];
+  return Array.isArray(v)
+    ? v
+        .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+        .map((s) => s.trim())
+    : [];
 }
 
 function str(v: unknown): string {
@@ -84,7 +95,11 @@ function durationLabel(session: Session): string {
 function titleOf(doc: ReviewDocument): string {
   const p = doc.profile;
   const bits = [p?.name, [p?.role, p?.company].filter(Boolean).join(' @ ')].filter(Boolean);
-  return bits.length ? bits.join(' — ') : doc.session.mode === 'practice' ? 'Practice session' : 'Live session';
+  return bits.length
+    ? bits.join(' — ')
+    : doc.session.mode === 'practice'
+      ? 'Practice session'
+      : 'Live session';
 }
 
 /**
@@ -92,15 +107,25 @@ function titleOf(doc: ReviewDocument): string {
  *   [01:23] THEM: Tell me about yourself
  *   [01:25] AI (suggested): Headline — point; point
  */
-export function transcriptText(session: Session, utterances: Utterance[], answers: AnswerCard[]): string {
+export function transcriptText(
+  session: Session,
+  utterances: Utterance[],
+  answers: AnswerCard[],
+): string {
   const lines: { ms: number; text: string }[] = utterances
     .filter((u) => u.isFinal)
-    .map((u) => ({ ms: u.startMs, text: `[${formatMs(u.startMs)}] ${u.speaker}${u.speakerName ? ` (${u.speakerName})` : ''}: ${u.text}` }));
+    .map((u) => ({
+      ms: u.startMs,
+      text: `[${formatMs(u.startMs)}] ${u.speaker}${u.speakerName ? ` (${u.speakerName})` : ''}: ${u.text}`,
+    }));
   for (const a of answers) {
     if (a.status !== 'done' || a.kind === 'chat' || !a.headline) continue;
     const ms = Math.max(0, a.createdAt - session.startedAt);
     const points = a.points.length ? ` — ${a.points.join('; ')}` : '';
-    lines.push({ ms, text: `[${formatMs(ms)}] AI (suggested for "${a.question.slice(0, 80)}"): ${a.headline}${points}` });
+    lines.push({
+      ms,
+      text: `[${formatMs(ms)}] AI (suggested for "${a.question.slice(0, 80)}"): ${a.headline}${points}`,
+    });
   }
   return lines
     .sort((a, b) => a.ms - b.ms)
@@ -117,16 +142,37 @@ export function renderMarkdown(doc: ReviewDocument): string {
   out.push(`- Date: ${new Date(session.startedAt).toLocaleString()}`);
   out.push(`- Duration: ${durationLabel(session)}`);
   out.push(`- Mode: ${session.mode}`);
-  if (doc.profile) out.push(`- Profile: ${doc.profile.name} (${doc.profile.type.replace('_', ' ')})`);
+  if (doc.profile)
+    out.push(`- Profile: ${doc.profile.name} (${doc.profile.type.replace('_', ' ')})`);
   out.push('');
   if (summary) {
     out.push('## Summary', '', summary.summary, '');
-    out.push('## Questions asked', '', ...(summary.questions.length ? summary.questions.map((q, i) => `${i + 1}. ${q}`) : ['_None detected._']), '');
-    out.push('## Weak spots', '', ...(summary.weakSpots.length ? summary.weakSpots.map((w) => `- ${w}`) : ['_None noted._']), '');
+    out.push(
+      '## Questions asked',
+      '',
+      ...(summary.questions.length
+        ? summary.questions.map((q, i) => `${i + 1}. ${q}`)
+        : ['_None detected._']),
+      '',
+    );
+    out.push(
+      '## Weak spots',
+      '',
+      ...(summary.weakSpots.length ? summary.weakSpots.map((w) => `- ${w}`) : ['_None noted._']),
+      '',
+    );
     out.push('## Follow-up email', '', summary.followUpEmail || '_Not generated._', '');
-    out.push('## Action items', '', ...(summary.actionItems.length ? summary.actionItems.map((a) => `- [ ] ${a}`) : ['_None._']), '');
+    out.push(
+      '## Action items',
+      '',
+      ...(summary.actionItems.length ? summary.actionItems.map((a) => `- [ ] ${a}`) : ['_None._']),
+      '',
+    );
   } else {
-    out.push('> No AI review was generated for this session. Open it in Kestrel → Review and press **Generate review**.', '');
+    out.push(
+      '> No AI review was generated for this session. Open it in Kestrel → Review and press **Generate review**.',
+      '',
+    );
   }
   const done = answers.filter((a) => a.status === 'done' && a.headline);
   out.push('## Suggested answers', '');
@@ -147,7 +193,11 @@ export function renderMarkdown(doc: ReviewDocument): string {
     }
   }
   out.push('## Full transcript', '');
-  const t = transcriptText(session, utterances, answers.filter((a) => a.kind !== 'chat'));
+  const t = transcriptText(
+    session,
+    utterances,
+    answers.filter((a) => a.kind !== 'chat'),
+  );
   out.push(t || '_Empty transcript._', '');
   return out.join('\n');
 }
@@ -168,7 +218,11 @@ export function markdownToHtml(md: string): string {
       list = null;
     }
   };
-  const inline = (s: string) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/_(.+?)_/g, '<i>$1</i>');
+  const inline = (s: string) =>
+    esc(s)
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/_(.+?)_/g, '<i>$1</i>');
   for (const raw of lines) {
     if (/^```/.test(raw)) {
       closeList();
@@ -294,7 +348,9 @@ export class ReviewService {
     };
     if (!summary.summary) throw new Error('The model returned an empty review — please try again.');
     db.setSessionSummary(sessionId, summary);
-    log.info(`review generated for ${sessionId} in ${Date.now() - t0} ms (${summary.questions.length} questions, ${summary.weakSpots.length} weak spots)`);
+    log.info(
+      `review generated for ${sessionId} in ${Date.now() - t0} ms (${summary.questions.length} questions, ${summary.weakSpots.length} weak spots)`,
+    );
     return summary;
   }
 
@@ -322,7 +378,9 @@ export class ReviewService {
     try {
       const loaded = new Promise<void>((resolve, reject) => {
         win.webContents.once('did-finish-load', () => resolve());
-        win.webContents.once('did-fail-load', (_e, code, desc) => reject(new Error(`PDF render failed (${code} ${desc})`)));
+        win.webContents.once('did-fail-load', (_e, code, desc) =>
+          reject(new Error(`PDF render failed (${code} ${desc})`)),
+        );
       });
       await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
       await loaded;

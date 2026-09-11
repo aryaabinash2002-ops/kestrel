@@ -36,12 +36,20 @@ export function Shell() {
   const online = useOnline();
   return (
     <div className="flex h-full flex-col bg-background">
-      <header className={cn('drag flex h-10 shrink-0 items-center gap-2 border-b border-border/70 px-3', isMac && 'pl-[84px]')}>
+      <header
+        className={cn(
+          'drag flex h-10 shrink-0 items-center gap-2 border-b border-border/70 px-3',
+          isMac && 'pl-[84px]',
+        )}
+      >
         <Bird className="size-4 text-primary" />
         <span className="text-xs font-semibold tracking-wide">Kestrel</span>
         <div className="ml-auto flex items-center gap-2">
           {!online && (
-            <span className="flex items-center gap-1 rounded-full border border-warning/50 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-warning" title="No network — transcription and answers will resume when you are back online">
+            <span
+              className="flex items-center gap-1 rounded-full border border-warning/50 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-warning"
+              title="No network — transcription and answers will resume when you are back online"
+            >
               <WifiOff className="size-3" /> Offline
             </span>
           )}

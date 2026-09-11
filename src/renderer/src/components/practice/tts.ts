@@ -6,12 +6,24 @@ function pickVoice(): SpeechSynthesisVoice | null {
   if (typeof speechSynthesis === 'undefined') return null;
   const voices = speechSynthesis.getVoices();
   if (!voices.length) return null;
-  const preferred = ['Samantha', 'Karen', 'Daniel', 'Google US English', 'Microsoft Aria', 'Microsoft Zira'];
+  const preferred = [
+    'Samantha',
+    'Karen',
+    'Daniel',
+    'Google US English',
+    'Microsoft Aria',
+    'Microsoft Zira',
+  ];
   for (const name of preferred) {
     const v = voices.find((x) => x.name.includes(name));
     if (v) return v;
   }
-  return voices.find((v) => v.lang.startsWith('en') && v.localService) ?? voices.find((v) => v.lang.startsWith('en')) ?? voices[0] ?? null;
+  return (
+    voices.find((v) => v.lang.startsWith('en') && v.localService) ??
+    voices.find((v) => v.lang.startsWith('en')) ??
+    voices[0] ??
+    null
+  );
 }
 
 export function ttsAvailable(): boolean {

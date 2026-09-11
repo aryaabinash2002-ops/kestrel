@@ -52,12 +52,25 @@ export default function Practice() {
     startedFromLink.current = true;
     void usePractice
       .getState()
-      .start({ profileId: null, setId: autoStart, count: Number(params.get('count') ?? 3), useTts: params.get('tts') === '1' })
+      .start({
+        profileId: null,
+        setId: autoStart,
+        count: Number(params.get('count') ?? 3),
+        useTts: params.get('tts') === '1',
+      })
       .catch(() => undefined);
   }, [autoStart, params]);
   useEffect(() => {
     if (!autoSubmit || phase !== 'listening' || !current) return;
-    const t = setTimeout(() => void usePractice.getState().submit('At Globex I led the billing migration to Stripe with zero downtime, cutting payment failures from 12% to 1%.'), 800);
+    const t = setTimeout(
+      () =>
+        void usePractice
+          .getState()
+          .submit(
+            'At Globex I led the billing migration to Stripe with zero downtime, cutting payment failures from 12% to 1%.',
+          ),
+      800,
+    );
     return () => clearTimeout(t);
   }, [autoSubmit, phase, current]);
 
@@ -90,8 +103,16 @@ export default function Practice() {
   const avg = scores.length ? scores.reduce((a, s) => a + s.score.score, 0) / scores.length : 0;
 
   return (
-    <Page title="Practice" subtitle={inSession ? undefined : 'Rehearse with an AI interviewer and get scored feedback.'} scroll>
-      {error && <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">{error}</div>}
+    <Page
+      title="Practice"
+      subtitle={inSession ? undefined : 'Rehearse with an AI interviewer and get scored feedback.'}
+      scroll
+    >
+      {error && (
+        <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
+          {error}
+        </div>
+      )}
 
       {(phase === 'idle' || phase === 'starting') && (
         <div className="space-y-4">
@@ -103,11 +124,24 @@ export default function Practice() {
       {inSession && current && (
         <div className="space-y-3">
           <div className="h-1 overflow-hidden rounded-full bg-secondary">
-            <div className="h-full bg-primary transition-[width]" style={{ width: `${((current.index + (phase === 'score' ? 1 : 0)) / current.total) * 100}%` }} />
+            <div
+              className="h-full bg-primary transition-[width]"
+              style={{
+                width: `${((current.index + (phase === 'score' ? 1 : 0)) / current.total) * 100}%`,
+              }}
+            />
           </div>
           <QuestionCard q={current} phase={phase} onReplay={replay} useTts={useTts} />
           {phase === 'score' && lastScore ? (
-            <ScoreCard score={lastScore} nextLabel={finishedPending || (!pending && current.index + 1 >= current.total) ? 'See results' : 'Next question'} onNext={next} />
+            <ScoreCard
+              score={lastScore}
+              nextLabel={
+                finishedPending || (!pending && current.index + 1 >= current.total)
+                  ? 'See results'
+                  : 'Next question'
+              }
+              onNext={next}
+            />
           ) : (
             <AnswerArea q={current} />
           )}
@@ -122,17 +156,35 @@ export default function Practice() {
               <div className="text-sm font-semibold">Practice complete</div>
               {scores.length ? (
                 <>
-                  <div className={cn('text-4xl font-bold tabular-nums', tone(avg))}>{avg.toFixed(1)}</div>
-                  <div className="text-[11px] text-muted-foreground">average over {scores.length} scored answer{scores.length === 1 ? '' : 's'}</div>
+                  <div className={cn('text-4xl font-bold tabular-nums', tone(avg))}>
+                    {avg.toFixed(1)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    average over {scores.length} scored answer{scores.length === 1 ? '' : 's'}
+                  </div>
                   <ul className="mt-2 w-full space-y-1 text-left text-xs">
                     {scores.map((s) => (
-                      <li key={s.id} className="flex gap-2 rounded-md border border-border/60 px-2 py-1">
-                        <span className={cn('w-5 shrink-0 font-semibold tabular-nums', tone(s.score.score))}>{s.score.score}</span>
+                      <li
+                        key={s.id}
+                        className="flex gap-2 rounded-md border border-border/60 px-2 py-1"
+                      >
+                        <span
+                          className={cn(
+                            'w-5 shrink-0 font-semibold tabular-nums',
+                            tone(s.score.score),
+                          )}
+                        >
+                          {s.score.score}
+                        </span>
                         <span className="min-w-0 flex-1">
                           <div className="truncate" title={s.question}>
                             {s.question}
                           </div>
-                          {s.score.improve_one_thing && <div className="truncate text-[11px] text-muted-foreground">{s.score.improve_one_thing}</div>}
+                          {s.score.improve_one_thing && (
+                            <div className="truncate text-[11px] text-muted-foreground">
+                              {s.score.improve_one_thing}
+                            </div>
+                          )}
                         </span>
                       </li>
                     ))}

@@ -27,7 +27,11 @@ export default function App() {
   }, [navigate]);
 
   if (!loaded) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading Kestrel…</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Loading Kestrel…
+      </div>
+    );
   }
 
   return (
@@ -43,7 +47,10 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:tab" element={<Settings />} />
         </Route>
-        <Route path="*" element={<Navigate to={onboardingDone ? '/setup' : '/onboarding'} replace />} />
+        <Route
+          path="*"
+          element={<Navigate to={onboardingDone ? '/setup' : '/onboarding'} replace />}
+        />
       </Routes>
       <Toaster />
     </TooltipProvider>

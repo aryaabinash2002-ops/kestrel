@@ -23,7 +23,13 @@ const TYPES = [
   { value: 'general', label: 'General meeting' },
 ];
 
-export function ProfileForm({ profile, onDone }: { profile: Profile | null; onDone: (saved: Profile | null) => void }) {
+export function ProfileForm({
+  profile,
+  onDone,
+}: {
+  profile: Profile | null;
+  onDone: (saved: Profile | null) => void;
+}) {
   const defaults = useSettings((s) => s.settings.defaults);
   const save = useProfiles((s) => s.save);
   const remove = useProfiles((s) => s.remove);
@@ -39,7 +45,10 @@ export function ProfileForm({ profile, onDone }: { profile: Profile | null; onDo
     }
     setBusy(true);
     try {
-      const saved = await save({ ...d, stories: d.stories.filter((s: Story) => s.title.trim() || s.text.trim()) });
+      const saved = await save({
+        ...d,
+        stories: d.stories.filter((s: Story) => s.title.trim() || s.text.trim()),
+      });
       toast({ kind: 'success', title: 'Profile saved' });
       onDone(saved);
     } catch (err) {
@@ -58,23 +67,43 @@ export function ProfileForm({ profile, onDone }: { profile: Profile | null; onDo
         <CardContent className="grid grid-cols-2 gap-3">
           <div className="col-span-2 space-y-1">
             <Label>Profile name</Label>
-            <Input value={d.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Acme — Senior Engineer" />
+            <Input
+              value={d.name}
+              onChange={(e) => set('name', e.target.value)}
+              placeholder="e.g. Acme — Senior Engineer"
+            />
           </div>
           <div className="space-y-1">
             <Label>Your name</Label>
-            <Input value={d.userName} onChange={(e) => set('userName', e.target.value)} placeholder="Jane" />
+            <Input
+              value={d.userName}
+              onChange={(e) => set('userName', e.target.value)}
+              placeholder="Jane"
+            />
           </div>
           <div className="space-y-1">
             <Label>Conversation type</Label>
-            <Select options={TYPES} value={d.type} onValueChange={(v) => set('type', v as Profile['type'])} />
+            <Select
+              options={TYPES}
+              value={d.type}
+              onValueChange={(v) => set('type', v as Profile['type'])}
+            />
           </div>
           <div className="space-y-1">
             <Label>Role</Label>
-            <Input value={d.role} onChange={(e) => set('role', e.target.value)} placeholder="Senior Software Engineer" />
+            <Input
+              value={d.role}
+              onChange={(e) => set('role', e.target.value)}
+              placeholder="Senior Software Engineer"
+            />
           </div>
           <div className="space-y-1">
             <Label>Company</Label>
-            <Input value={d.company} onChange={(e) => set('company', e.target.value)} placeholder="Acme" />
+            <Input
+              value={d.company}
+              onChange={(e) => set('company', e.target.value)}
+              placeholder="Acme"
+            />
           </div>
           <div className="space-y-1">
             <Label>Answer language</Label>
@@ -112,12 +141,29 @@ export function ProfileForm({ profile, onDone }: { profile: Profile | null; onDo
           <CardTitle>Grounding</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <DocumentField label="Résumé" value={d.resumeText} onChange={(v) => set('resumeText', v)} hint="Paste your résumé or import a PDF/DOCX. Answers only use facts from here." />
-          <DocumentField label="Job description" value={d.jdText} onChange={(v) => set('jdText', v)} rows={5} hint="Paste the JD (or import). Used to tailor answers and generate practice questions." />
+          <DocumentField
+            label="Résumé"
+            value={d.resumeText}
+            onChange={(v) => set('resumeText', v)}
+            hint="Paste your résumé or import a PDF/DOCX. Answers only use facts from here."
+          />
+          <DocumentField
+            label="Job description"
+            value={d.jdText}
+            onChange={(v) => set('jdText', v)}
+            rows={5}
+            hint="Paste the JD (or import). Used to tailor answers and generate practice questions."
+          />
           <StoryBank stories={d.stories} onChange={(s) => set('stories', s)} />
           <div className="space-y-1">
             <Label>Notes</Label>
-            <Textarea rows={3} value={d.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Anything the assistant should know: what to emphasise, topics to avoid, salary range, availability…" className="text-xs" />
+            <Textarea
+              rows={3}
+              value={d.notes}
+              onChange={(e) => set('notes', e.target.value)}
+              placeholder="Anything the assistant should know: what to emphasise, topics to avoid, salary range, availability…"
+              className="text-xs"
+            />
           </div>
         </CardContent>
       </Card>
@@ -146,7 +192,10 @@ export function ProfileForm({ profile, onDone }: { profile: Profile | null; onDo
   );
 }
 
-function toDraft(p: Profile | null, defaults: { length: Profile['length']; tone: Profile['tone']; language: string }): Draft {
+function toDraft(
+  p: Profile | null,
+  defaults: { length: Profile['length']; tone: Profile['tone']; language: string },
+): Draft {
   return {
     id: p?.id,
     name: p?.name ?? '',

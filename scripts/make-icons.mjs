@@ -4,7 +4,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 function crc32(buf) {
-  let c, crc = 0xffffffff;
+  let c,
+    crc = 0xffffffff;
   for (let n = 0; n < buf.length; n++) {
     c = (crc ^ buf[n]) & 0xff;
     for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
@@ -32,12 +33,21 @@ export function iconPng(size) {
   // "K" strokes in normalized coords
   const stroke = size * 0.16;
   const inK = (x, y) => {
-    const nx = x / size, ny = y / size;
+    const nx = x / size,
+      ny = y / size;
     const s = stroke / size;
     if (nx > 0.28 && nx < 0.28 + s && ny > 0.2 && ny < 0.8) return true; // vertical bar
     // upper diagonal from (0.28+s, 0.5) to (0.72, 0.2)
-    const d1 = Math.abs((ny - 0.5) + (nx - 0.3) * (0.3 / 0.42)) < s * 0.7 && nx >= 0.3 && nx <= 0.74 && ny <= 0.52;
-    const d2 = Math.abs((ny - 0.5) - (nx - 0.3) * (0.3 / 0.42)) < s * 0.7 && nx >= 0.3 && nx <= 0.74 && ny >= 0.48;
+    const d1 =
+      Math.abs(ny - 0.5 + (nx - 0.3) * (0.3 / 0.42)) < s * 0.7 &&
+      nx >= 0.3 &&
+      nx <= 0.74 &&
+      ny <= 0.52;
+    const d2 =
+      Math.abs(ny - 0.5 - (nx - 0.3) * (0.3 / 0.42)) < s * 0.7 &&
+      nx >= 0.3 &&
+      nx <= 0.74 &&
+      ny >= 0.48;
     return d1 || d2;
   };
   for (let y = 0; y < size; y++) {
@@ -56,7 +66,11 @@ export function iconPng(size) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr),
@@ -66,7 +80,8 @@ export function iconPng(size) {
 }
 export function createIcons(dir) {
   mkdirSync(dir, { recursive: true });
-  for (const s of [16, 32, 48, 128, 256, 512]) writeFileSync(resolve(dir, `icon${s}.png`), iconPng(s));
+  for (const s of [16, 32, 48, 128, 256, 512])
+    writeFileSync(resolve(dir, `icon${s}.png`), iconPng(s));
 }
 if (process.argv[1] && process.argv[1].endsWith('make-icons.mjs')) {
   createIcons(process.argv[2] ?? resolve(import.meta.dirname, '../build'));

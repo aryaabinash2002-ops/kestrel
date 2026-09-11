@@ -1,8 +1,18 @@
 import { create } from 'zustand';
-import type { AnswerCard, ScreenshotResult, Session, SessionSummary, Utterance } from '@shared/types/session';
+import type {
+  AnswerCard,
+  ScreenshotResult,
+  Session,
+  SessionSummary,
+  Utterance,
+} from '@shared/types/session';
 import { invoke } from '@renderer/lib/ipc';
 
-export type SessionRow = Session & { profileName: string | null; utteranceCount: number; answerCount: number };
+export type SessionRow = Session & {
+  profileName: string | null;
+  utteranceCount: number;
+  answerCount: number;
+};
 
 export interface SessionDetailData {
   session: SessionRow;
@@ -69,7 +79,10 @@ export const useReview = create<ReviewState>((set, get) => ({
   deleteSession: async (id) => {
     await invoke('session:delete', id);
     const detail = get().detail;
-    set({ sessions: get().sessions.filter((s) => s.id !== id), detail: detail?.session.id === id ? null : detail });
+    set({
+      sessions: get().sessions.filter((s) => s.id !== id),
+      detail: detail?.session.id === id ? null : detail,
+    });
   },
   generate: async (id) => {
     set({ generating: true });
@@ -79,7 +92,10 @@ export const useReview = create<ReviewState>((set, get) => ({
       const detail = get().detail;
       set({
         sessions: get().sessions.map(patch),
-        detail: detail && detail.session.id === id ? { ...detail, session: { ...detail.session, summary } } : detail,
+        detail:
+          detail && detail.session.id === id
+            ? { ...detail, session: { ...detail.session, summary } }
+            : detail,
       });
       return summary;
     } finally {

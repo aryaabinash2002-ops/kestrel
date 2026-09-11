@@ -3,7 +3,12 @@ import { Clock, FileText, GraduationCap, MessageSquareText, Radio, Trash2 } from
 import { Card, CardContent } from '@renderer/components/ui/card';
 import { Button } from '@renderer/components/ui/button';
 import { Badge } from '@renderer/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@renderer/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@renderer/components/ui/dialog';
 import { formatMs } from '@shared/utils';
 import { cn } from '@renderer/lib/utils';
 import type { SessionRow } from '@renderer/store/review';
@@ -21,7 +26,17 @@ export function sessionDuration(s: { startedAt: number; endedAt: number | null }
   return s.endedAt ? formatMs(s.endedAt - s.startedAt) : 'live';
 }
 
-export function SessionList({ sessions, activeId, onOpen, onDelete }: { sessions: SessionRow[]; activeId: string | null; onOpen: (id: string) => void; onDelete: (id: string) => Promise<void> }) {
+export function SessionList({
+  sessions,
+  activeId,
+  onOpen,
+  onDelete,
+}: {
+  sessions: SessionRow[];
+  activeId: string | null;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+}) {
   const [confirm, setConfirm] = useState<SessionRow | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -31,7 +46,10 @@ export function SessionList({ sessions, activeId, onOpen, onDelete }: { sessions
         <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
           <FileText className="size-6 text-primary" />
           <p className="text-sm">No sessions yet</p>
-          <p className="max-w-xs text-xs text-muted-foreground">Every live or practice session ends up here with its transcript, the answers you were shown, and an AI review you can export.</p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            Every live or practice session ends up here with its transcript, the answers you were
+            shown, and an AI review you can export.
+          </p>
         </CardContent>
       </Card>
     );
@@ -42,12 +60,25 @@ export function SessionList({ sessions, activeId, onOpen, onDelete }: { sessions
       {sessions.map((s) => {
         const live = s.id === activeId;
         return (
-          <Card key={s.id} className={cn('transition-colors hover:border-primary/40', live && 'border-primary/60')}>
+          <Card
+            key={s.id}
+            className={cn('transition-colors hover:border-primary/40', live && 'border-primary/60')}
+          >
             <CardContent className="flex items-start gap-2 p-3">
-              <button className="no-drag min-w-0 flex-1 text-left" onClick={() => onOpen(s.id)} title="Open session">
+              <button
+                className="no-drag min-w-0 flex-1 text-left"
+                onClick={() => onOpen(s.id)}
+                title="Open session"
+              >
                 <div className="flex items-center gap-2">
-                  {s.mode === 'practice' ? <GraduationCap className="size-3.5 shrink-0 text-primary" /> : <Radio className="size-3.5 shrink-0 text-primary" />}
-                  <span className="truncate text-sm font-semibold">{s.profileName ?? (s.mode === 'practice' ? 'Practice session' : 'Live session')}</span>
+                  {s.mode === 'practice' ? (
+                    <GraduationCap className="size-3.5 shrink-0 text-primary" />
+                  ) : (
+                    <Radio className="size-3.5 shrink-0 text-primary" />
+                  )}
+                  <span className="truncate text-sm font-semibold">
+                    {s.profileName ?? (s.mode === 'practice' ? 'Practice session' : 'Live session')}
+                  </span>
                   {live && <Badge variant="success">Live</Badge>}
                   {s.summary && <Badge variant="secondary">Reviewed</Badge>}
                 </div>
@@ -57,11 +88,19 @@ export function SessionList({ sessions, activeId, onOpen, onDelete }: { sessions
                     <Clock className="size-3" /> {sessionDuration(s)}
                   </span>
                   <span className="flex items-center gap-1">
-                    <MessageSquareText className="size-3" /> {s.utteranceCount} lines · {s.answerCount} answers
+                    <MessageSquareText className="size-3" /> {s.utteranceCount} lines ·{' '}
+                    {s.answerCount} answers
                   </span>
                 </div>
               </button>
-              <Button size="iconSm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-destructive" title="Delete session" onClick={() => setConfirm(s)} disabled={live}>
+              <Button
+                size="iconSm"
+                variant="ghost"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                title="Delete session"
+                onClick={() => setConfirm(s)}
+                disabled={live}
+              >
                 <Trash2 />
               </Button>
             </CardContent>
@@ -72,7 +111,9 @@ export function SessionList({ sessions, activeId, onOpen, onDelete }: { sessions
         <DialogContent>
           <DialogTitle>Delete this session?</DialogTitle>
           <DialogDescription>
-            {confirm ? `${confirm.profileName ?? 'Session'} from ${sessionDate(confirm.startedAt)} — the transcript, answers, screenshots and review will be removed permanently.` : ''}
+            {confirm
+              ? `${confirm.profileName ?? 'Session'} from ${sessionDate(confirm.startedAt)} — the transcript, answers, screenshots and review will be removed permanently.`
+              : ''}
           </DialogDescription>
           <div className="flex justify-end gap-2 pt-1">
             <Button size="sm" variant="outline" onClick={() => setConfirm(null)}>

@@ -72,7 +72,11 @@ export function registerCoreHandlers(ctx: AppContext): void {
     if (res.canceled || !res.filePaths[0]) return null;
     const dir = res.filePaths[0];
     ctx.settings.set({ dataDir: dir });
-    emit('toast', { kind: 'info', title: 'Data folder changed', message: 'Restart Kestrel to use the new folder.' });
+    emit('toast', {
+      kind: 'info',
+      title: 'Data folder changed',
+      message: 'Restart Kestrel to use the new folder.',
+    });
     return dir;
   });
 

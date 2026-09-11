@@ -13,8 +13,9 @@ const api = {
     ipcRenderer.on('region:init', fn);
     return () => ipcRenderer.off('region:init', fn);
   },
-  select: (rect: { x: number; y: number; width: number; height: number; displayId: number } | null) =>
-    ipcRenderer.send('region:selected', rect),
+  select: (
+    rect: { x: number; y: number; width: number; height: number; displayId: number } | null,
+  ) => ipcRenderer.send('region:selected', rect),
 };
 
 contextBridge.exposeInMainWorld('kestrelRegion', api);

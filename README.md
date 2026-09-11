@@ -58,6 +58,8 @@ npm run package:dir    # unpacked app for a quick check
 
 The extension bundle is copied into the app's resources; *Settings → Audio → Extension folder* opens it for "Load unpacked". Builds are unsigned unless you configure a signing identity / certificate for electron-builder.
 
+Native modules are N-API (`better-sqlite3` ships prebuilt binaries for every platform, `keytar` downloads the host platform's binary at `npm install`), so no per-Electron rebuild is needed. Build the Windows installer **on Windows** so the Windows `keytar` binary is present; a Windows package cross-built on macOS still runs but stores keys with Electron's `safeStorage` (DPAPI) instead of the Credential Manager.
+
 ## Developer switches and tools
 
 * `KESTREL_SMOKE=/path.png` renders the panel and captures it, printing `SMOKE_RESULT` with renderer console errors. Modifiers: `KESTREL_SMOKE_ROUTE="#/settings/keys"`, `KESTREL_SMOKE_SESSION=1` (start a live session + audio), `KESTREL_SMOKE_ANSWER=1`, `KESTREL_SMOKE_CHAT=1`, `KESTREL_SMOKE_SCREENSHOT=1`, `KESTREL_SMOKE_SEED_PROFILE=1`, `KESTREL_SMOKE_SETTINGS='{"ui":{"theme":"light"}}'`, `KESTREL_SMOKE_AUDIO=1` (level probe).
@@ -84,7 +86,7 @@ The extension bundle is copied into the app's resources; *Settings → Audio →
 | 9 | Follow-up chat box | ✅ |
 | 10 | Post-session review + export | ✅ (Markdown + PDF; generation verified against the fake LLM) |
 | 11 | Practice mode | ✅ (TTS via Web Speech, scoring verified against the fake LLM) |
-| 12 | Polish | ⏳ |
-| 13 | Packaging | ⏳ |
+| 12 | Polish: themes, opacity, compact mode, error states, onboarding | ✅ |
+| 13 | Packaging: DMG (arm64 + x64) and Windows unpacked build verified on macOS; NSIS to be produced on Windows | ✅ |
 
 See `ARCHITECTURE.md` for how the pieces fit together.

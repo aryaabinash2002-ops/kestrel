@@ -226,13 +226,14 @@ export class SessionDB {
   }
 
   listProfiles(): Profile[] {
-    return (this.db.prepare('SELECT * FROM profiles ORDER BY updated_at DESC').all() as ProfileRow[]).map((r) =>
-      this.rowToProfile(r),
-    );
+    return (
+      this.db.prepare('SELECT * FROM profiles ORDER BY updated_at DESC').all() as ProfileRow[]
+    ).map((r) => this.rowToProfile(r));
   }
 
   getProfile(id: string): Profile | null {
-    const r = this.db.prepare('SELECT * FROM profiles WHERE id = ?').get(id) as ProfileRow | undefined;
+    const r = this.db.prepare('SELECT * FROM profiles WHERE id = ?').get(id) as
+      ProfileRow | undefined;
     return r ? this.rowToProfile(r) : null;
   }
 
@@ -301,7 +302,14 @@ export class SessionDB {
   }
 
   createSession(profileId: string | null, mode: Session['mode']): Session {
-    const s: Session = { id: uid('sess'), profileId, mode, startedAt: Date.now(), endedAt: null, summary: null };
+    const s: Session = {
+      id: uid('sess'),
+      profileId,
+      mode,
+      startedAt: Date.now(),
+      endedAt: null,
+      summary: null,
+    };
     this.db
       .prepare('INSERT INTO sessions (id, profile_id, mode, started_at) VALUES (?, ?, ?, ?)')
       .run(s.id, s.profileId, s.mode, s.startedAt);
@@ -309,15 +317,22 @@ export class SessionDB {
   }
 
   endSession(id: string): void {
-    this.db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ? AND ended_at IS NULL').run(Date.now(), id);
+    this.db
+      .prepare('UPDATE sessions SET ended_at = ? WHERE id = ? AND ended_at IS NULL')
+      .run(Date.now(), id);
   }
 
   getSession(id: string): Session | null {
-    const r = this.db.prepare('SELECT * FROM sessions WHERE id = ?').get(id) as SessionRow | undefined;
+    const r = this.db.prepare('SELECT * FROM sessions WHERE id = ?').get(id) as
+      SessionRow | undefined;
     return r ? this.rowToSession(r) : null;
   }
 
-  listSessions(): (Session & { profileName: string | null; utteranceCount: number; answerCount: number })[] {
+  listSessions(): (Session & {
+    profileName: string | null;
+    utteranceCount: number;
+    answerCount: number;
+  })[] {
     const rows = this.db
       .prepare(
         `SELECT s.*, p.name AS profile_name,
@@ -326,7 +341,11 @@ export class SessionDB {
          FROM sessions s LEFT JOIN profiles p ON p.id = s.profile_id
          ORDER BY s.started_at DESC`,
       )
-      .all() as (SessionRow & { profile_name: string | null; utterance_count: number; answer_count: number })[];
+      .all() as (SessionRow & {
+      profile_name: string | null;
+      utterance_count: number;
+      answer_count: number;
+    })[];
     return rows.map((r) => ({
       ...this.rowToSession(r),
       profileName: r.profile_name,
@@ -336,7 +355,9 @@ export class SessionDB {
   }
 
   setSessionSummary(id: string, summary: SessionSummary): void {
-    this.db.prepare('UPDATE sessions SET summary_json = ? WHERE id = ?').run(JSON.stringify(summary), id);
+    this.db
+      .prepare('UPDATE sessions SET summary_json = ? WHERE id = ?')
+      .run(JSON.stringify(summary), id);
   }
 
   deleteSession(id: string): void {
@@ -427,7 +448,9 @@ export class SessionDB {
 
   saveAnswer(a: AnswerCard): void {
     const latencyMs =
-      a.latency.firstTokenTs && a.latency.questionEndTs ? a.latency.firstTokenTs - a.latency.questionEndTs : null;
+      a.latency.firstTokenTs && a.latency.questionEndTs
+        ? a.latency.firstTokenTs - a.latency.questionEndTs
+        : null;
     this.db
       .prepare(
         `INSERT INTO answers (id, session_id, question, type, content, headline, points_json, model, latency_ms, latency_json, kind, status, created_at)
@@ -455,7 +478,9 @@ export class SessionDB {
 
   listAnswers(sessionId: string): AnswerCard[] {
     return (
-      this.db.prepare('SELECT * FROM answers WHERE session_id = ? ORDER BY created_at ASC').all(sessionId) as AnswerRow[]
+      this.db
+        .prepare('SELECT * FROM answers WHERE session_id = ? ORDER BY created_at ASC')
+        .all(sessionId) as AnswerRow[]
     ).map((r) => this.rowToAnswer(r));
   }
 
@@ -471,20 +496,33 @@ export class SessionDB {
 
   listScreenshots(sessionId: string): ScreenshotResult[] {
     return (
-      this.db.prepare('SELECT * FROM screenshots WHERE session_id = ? ORDER BY created_at ASC').all(sessionId) as ScreenshotRow[]
-    ).map((r) => ({ id: r.id, sessionId: r.session_id, path: r.path, result: r.result, status: 'done', createdAt: r.created_at }));
+      this.db
+        .prepare('SELECT * FROM screenshots WHERE session_id = ? ORDER BY created_at ASC')
+        .all(sessionId) as ScreenshotRow[]
+    ).map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      path: r.path,
+      result: r.result,
+      status: 'done',
+      createdAt: r.created_at,
+    }));
   }
 
   // ---------- practice ----------
   savePracticeScore(p: PracticeScore): void {
     this.db
-      .prepare('INSERT OR REPLACE INTO practice_scores (id, session_id, question, answer, score_json, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .prepare(
+        'INSERT OR REPLACE INTO practice_scores (id, session_id, question, answer, score_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
       .run(p.id, p.sessionId, p.question, p.answer, JSON.stringify(p.score), p.createdAt);
   }
 
   listPracticeScores(sessionId: string): PracticeScore[] {
     return (
-      this.db.prepare('SELECT * FROM practice_scores WHERE session_id = ? ORDER BY created_at ASC').all(sessionId) as PracticeRow[]
+      this.db
+        .prepare('SELECT * FROM practice_scores WHERE session_id = ? ORDER BY created_at ASC')
+        .all(sessionId) as PracticeRow[]
     ).map((r) => ({
       id: r.id,
       sessionId: r.session_id,
@@ -507,8 +545,14 @@ export class SessionDB {
   listPracticeSessions(profileId: string | null): Session[] {
     const rows = (
       profileId
-        ? this.db.prepare("SELECT * FROM sessions WHERE mode = 'practice' AND profile_id = ? ORDER BY started_at DESC").all(profileId)
-        : this.db.prepare("SELECT * FROM sessions WHERE mode = 'practice' ORDER BY started_at DESC").all()
+        ? this.db
+            .prepare(
+              "SELECT * FROM sessions WHERE mode = 'practice' AND profile_id = ? ORDER BY started_at DESC",
+            )
+            .all(profileId)
+        : this.db
+            .prepare("SELECT * FROM sessions WHERE mode = 'practice' ORDER BY started_at DESC")
+            .all()
     ) as SessionRow[];
     return rows.map((r) => this.rowToSession(r));
   }
@@ -534,7 +578,9 @@ export class SessionDB {
 
   listLatency(limit = 500): LatencySample[] {
     return (
-      this.db.prepare('SELECT * FROM latency_samples ORDER BY created_at DESC LIMIT ?').all(limit) as LatencyRow[]
+      this.db
+        .prepare('SELECT * FROM latency_samples ORDER BY created_at DESC LIMIT ?')
+        .all(limit) as LatencyRow[]
     ).map((r) => ({
       answerId: r.answer_id ?? '',
       questionEndTs: r.question_end_ts,
@@ -553,7 +599,8 @@ export class SessionDB {
 
   // ---------- meta ----------
   getMeta(key: string): string | null {
-    const r = this.db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined;
+    const r = this.db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as
+      { value: string } | undefined;
     return r?.value ?? null;
   }
 

@@ -45,6 +45,10 @@ export function emit<C extends IpcEventChannel>(channel: C, payload: IpcEventMap
 }
 
 /** Push an event to a specific window. */
-export function emitTo<C extends IpcEventChannel>(win: BrowserWindow | null, channel: C, payload: IpcEventMap[C]): void {
+export function emitTo<C extends IpcEventChannel>(
+  win: BrowserWindow | null,
+  channel: C,
+  payload: IpcEventMap[C],
+): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 }

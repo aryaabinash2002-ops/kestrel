@@ -1,4 +1,10 @@
-import type { IpcEventChannel, IpcEventMap, IpcInvokeChannel, IpcInvokeMap, KestrelApi } from '@shared/types/ipc';
+import type {
+  IpcEventChannel,
+  IpcEventMap,
+  IpcInvokeChannel,
+  IpcInvokeMap,
+  KestrelApi,
+} from '@shared/types/ipc';
 
 const missing: KestrelApi = {
   invoke: async () => {
@@ -9,7 +15,8 @@ const missing: KestrelApi = {
   platform: 'darwin',
 };
 
-export const kestrel: KestrelApi = typeof window !== 'undefined' && window.kestrel ? window.kestrel : missing;
+export const kestrel: KestrelApi =
+  typeof window !== 'undefined' && window.kestrel ? window.kestrel : missing;
 
 export function invoke<C extends IpcInvokeChannel>(
   channel: C,
@@ -18,7 +25,10 @@ export function invoke<C extends IpcInvokeChannel>(
   return kestrel.invoke(channel, ...args);
 }
 
-export function on<C extends IpcEventChannel>(channel: C, listener: (payload: IpcEventMap[C]) => void): () => void {
+export function on<C extends IpcEventChannel>(
+  channel: C,
+  listener: (payload: IpcEventMap[C]) => void,
+): () => void {
   return kestrel.on(channel, listener);
 }
 

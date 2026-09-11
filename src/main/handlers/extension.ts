@@ -48,7 +48,11 @@ export function registerExtensionHandlers(ctx: AppContext): void {
         await ctx.audio.start();
         ctx.sessions.setListening(true);
       }
-      emit('toast', { kind: 'info', title: 'Google Meet call detected', message: 'Kestrel is listening.' });
+      emit('toast', {
+        kind: 'info',
+        title: 'Google Meet call detected',
+        message: 'Kestrel is listening.',
+      });
     } else {
       log.info('Meet call left');
       const s = ctx.sessions.session;
@@ -56,7 +60,11 @@ export function registerExtensionHandlers(ctx: AppContext): void {
       if (ctx.audio.state().listening) await ctx.audio.stop();
       ctx.sessions.stop();
       emit('navigate', { to: `/review/${s.id}` });
-      emit('toast', { kind: 'info', title: 'Call ended', message: 'Session saved — opening the review.' });
+      emit('toast', {
+        kind: 'info',
+        title: 'Call ended',
+        message: 'Session saved — opening the review.',
+      });
     }
   });
 
@@ -70,7 +78,12 @@ export function registerExtensionHandlers(ctx: AppContext): void {
     if (!isSelf) ctx.transcription.setSpeakerHint(c.speaker, c.ts);
     if (!sttHealthy) {
       // Provider down / no key: captions become the transcript.
-      ctx.transcription.pushExternalUtterance(channel, c.text, isSelf ? undefined : c.speaker, c.isFinal);
+      ctx.transcription.pushExternalUtterance(
+        channel,
+        c.text,
+        isSelf ? undefined : c.speaker,
+        c.isFinal,
+      );
     }
   });
 
@@ -78,7 +91,11 @@ export function registerExtensionHandlers(ctx: AppContext): void {
   ctx.sessions.on('ended', () => bridge.notifySession(false));
   ctx.settings.onChange((next, prev) => {
     if (next.extensionPort !== prev.extensionPort) {
-      emit('toast', { kind: 'info', title: 'Extension port changed', message: 'Restart Kestrel to apply.' });
+      emit('toast', {
+        kind: 'info',
+        title: 'Extension port changed',
+        message: 'Restart Kestrel to apply.',
+      });
     }
   });
 }

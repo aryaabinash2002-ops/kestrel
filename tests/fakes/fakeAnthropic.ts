@@ -1,7 +1,10 @@
 // Typed wrapper around the plain-JS fake so tests get types.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - plain ESM module without types
-import { startFakeAnthropic as start, defaultResponder as responder } from '../../scripts/dev/fake-anthropic.mjs';
+import {
+  startFakeAnthropic as start,
+  defaultResponder as responder,
+} from '../../scripts/dev/fake-anthropic.mjs';
 
 export interface FakeRequest {
   body: {

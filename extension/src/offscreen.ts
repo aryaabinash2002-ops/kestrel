@@ -21,7 +21,9 @@ let capturing = false;
 let pingTimer: number | null = null;
 
 function report(status: Partial<ExtStatus>): void {
-  void chrome.runtime.sendMessage({ type: 'offscreen-status', status } satisfies ExtMessage).catch(() => undefined);
+  void chrome.runtime
+    .sendMessage({ type: 'offscreen-status', status } satisfies ExtMessage)
+    .catch(() => undefined);
 }
 
 function sendJson(msg: ExtensionToAppMessage): void {
@@ -38,9 +40,21 @@ function connect(token: string, port: number): void {
   ws = socket;
   socket.onopen = () => {
     reconnectDelay = 1000;
-    sendJson({ type: 'hello', token, client: navigator.userAgent.includes('Edg/') ? 'Edge' : navigator.userAgent.includes('Brave') ? 'Brave' : 'Chrome', version: VERSION });
+    sendJson({
+      type: 'hello',
+      token,
+      client: navigator.userAgent.includes('Edg/')
+        ? 'Edge'
+        : navigator.userAgent.includes('Brave')
+          ? 'Brave'
+          : 'Chrome',
+      version: VERSION,
+    });
     if (pingTimer) clearInterval(pingTimer);
-    pingTimer = setInterval(() => sendJson({ type: 'ping', ts: Date.now() }), 10000) as unknown as number;
+    pingTimer = setInterval(
+      () => sendJson({ type: 'ping', ts: Date.now() }),
+      10000,
+    ) as unknown as number;
   };
   socket.onmessage = (ev) => {
     if (typeof ev.data !== 'string') return;
@@ -51,16 +65,26 @@ function connect(token: string, port: number): void {
       return;
     }
     if (msg.type === 'welcome') {
-      report({ connection: 'connected', appVersion: msg.appVersion, sessionActive: msg.sessionActive, lastError: null });
+      report({
+        connection: 'connected',
+        appVersion: msg.appVersion,
+        sessionActive: msg.sessionActive,
+        lastError: null,
+      });
       if (capturing) sendJson({ type: 'capture', state: 'started' });
     } else if (msg.type === 'error') {
-      report({ connection: msg.code === 'bad-token' ? 'bad-token' : 'error', lastError: msg.message });
+      report({
+        connection: msg.code === 'bad-token' ? 'bad-token' : 'error',
+        lastError: msg.message,
+      });
       if (msg.code === 'bad-token') {
         wsToken = '';
         socket.close();
       }
     }
-    void chrome.runtime.sendMessage({ type: 'app-message', message: msg } satisfies ExtMessage).catch(() => undefined);
+    void chrome.runtime
+      .sendMessage({ type: 'app-message', message: msg } satisfies ExtMessage)
+      .catch(() => undefined);
   };
   socket.onclose = () => {
     if (ws === socket) ws = null;

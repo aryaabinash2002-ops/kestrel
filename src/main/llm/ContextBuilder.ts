@@ -42,7 +42,10 @@ export interface BuiltPrompt {
 export const TRANSCRIPT_WINDOW_MS = 5 * 60 * 1000;
 export const TRANSCRIPT_MAX_CHARS = 7000;
 
-export function profileToContext(p: Profile | null, defaults: { length: AnswerLength; tone: Tone; language: string }): ContextProfile {
+export function profileToContext(
+  p: Profile | null,
+  defaults: { length: AnswerLength; tone: Tone; language: string },
+): ContextProfile {
   return {
     userName: p?.userName || 'the user',
     role: p?.role || 'the role being discussed',
@@ -51,9 +54,13 @@ export function profileToContext(p: Profile | null, defaults: { length: AnswerLe
     language: p?.language || defaults.language,
     length: p?.length ?? defaults.length,
     tone: p?.tone ?? defaults.tone,
-    resumeText: p?.resumeText || '(no résumé uploaded — do not invent experience; suggest transferable examples instead)',
+    resumeText:
+      p?.resumeText ||
+      '(no résumé uploaded — do not invent experience; suggest transferable examples instead)',
     jdText: p?.jdText || '(no job description provided)',
-    stories: p?.stories?.length ? p.stories.map((s) => `### ${s.title}\n${s.text}`).join('\n\n') : '(none)',
+    stories: p?.stories?.length
+      ? p.stories.map((s) => `### ${s.title}\n${s.text}`).join('\n\n')
+      : '(none)',
     notes: p?.notes || '(none)',
   };
 }
@@ -88,8 +95,15 @@ export function buildSystemPrefix(template: string, ctx: ContextProfile): string
  * Trim the transcript to the last `windowMs` (by end time) and at most `maxChars`,
  * newest kept. Returns ME/THEM labelled lines.
  */
-export function formatTranscript(utterances: Utterance[], nowMs: number, windowMs = TRANSCRIPT_WINDOW_MS, maxChars = TRANSCRIPT_MAX_CHARS): string {
-  const recent = utterances.filter((u) => u.isFinal && u.speaker !== 'AI' && nowMs - u.endMs <= windowMs);
+export function formatTranscript(
+  utterances: Utterance[],
+  nowMs: number,
+  windowMs = TRANSCRIPT_WINDOW_MS,
+  maxChars = TRANSCRIPT_MAX_CHARS,
+): string {
+  const recent = utterances.filter(
+    (u) => u.isFinal && u.speaker !== 'AI' && nowMs - u.endMs <= windowMs,
+  );
   const lines: string[] = [];
   let chars = 0;
   for (let i = recent.length - 1; i >= 0; i--) {
@@ -121,7 +135,9 @@ export function buildLivePrompt(a: BuildArgs): BuiltPrompt {
   const cacheMinimum = cacheMinimumTokens(a.model);
   const cached = a.cache ?? prefixTokens >= cacheMinimum;
   const system: Anthropic.TextBlockParam[] = [
-    cached ? { type: 'text', text: prefix, cache_control: { type: 'ephemeral' } } : { type: 'text', text: prefix },
+    cached
+      ? { type: 'text', text: prefix, cache_control: { type: 'ephemeral' } }
+      : { type: 'text', text: prefix },
   ];
   const transcript = formatTranscript(a.utterances, a.nowMs);
   const parts: string[] = [];

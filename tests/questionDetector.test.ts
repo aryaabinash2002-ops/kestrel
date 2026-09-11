@@ -1,5 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { QuestionDetector, looksLikeQuestion, type DetectedQuestion, type QuestionUpdate } from '@main/detection/QuestionDetector';
+import {
+  QuestionDetector,
+  looksLikeQuestion,
+  type DetectedQuestion,
+  type QuestionUpdate,
+} from '@main/detection/QuestionDetector';
 
 describe('looksLikeQuestion (§5.3 heuristic)', () => {
   it.each([
@@ -16,13 +21,20 @@ describe('looksLikeQuestion (§5.3 heuristic)', () => {
     'Give me an example of leadership',
   ])('detects: %s', (t) => expect(looksLikeQuestion(t)).toBe(true));
 
-  it.each(['Great, thanks.', 'Okay so next we will move on to the coding part.', 'That makes sense.', 'Hi', 'Sounds good, thank you'])('ignores: %s', (t) =>
-    expect(looksLikeQuestion(t)).toBe(false),
-  );
+  it.each([
+    'Great, thanks.',
+    'Okay so next we will move on to the coding part.',
+    'That makes sense.',
+    'Hi',
+    'Sounds good, thank you',
+  ])('ignores: %s', (t) => expect(looksLikeQuestion(t)).toBe(false));
 
   it('is fast', () => {
     const t0 = performance.now();
-    for (let i = 0; i < 2000; i++) looksLikeQuestion('So can you walk me through a time when you had to handle a difficult stakeholder and what happened');
+    for (let i = 0; i < 2000; i++)
+      looksLikeQuestion(
+        'So can you walk me through a time when you had to handle a difficult stakeholder and what happened',
+      );
     expect((performance.now() - t0) / 2000).toBeLessThan(0.05); // ms per call
   });
 });
@@ -54,7 +66,11 @@ describe('QuestionDetector', () => {
     expect(questions).toHaveLength(0);
     vi.advanceTimersByTime(1);
     expect(questions).toHaveLength(1);
-    expect(questions[0]).toMatchObject({ text: 'tell me about a time you failed', speculative: true, questionEndTs: 1900 });
+    expect(questions[0]).toMatchObject({
+      text: 'tell me about a time you failed',
+      speculative: true,
+      questionEndTs: 1900,
+    });
     d.final('Tell me about a time you failed.', 2100);
     expect(questions).toHaveLength(1);
     expect(updates).toHaveLength(1);
@@ -67,7 +83,10 @@ describe('QuestionDetector', () => {
     d.interim('tell me about a time you failed', 1000);
     vi.advanceTimersByTime(350);
     expect(questions).toHaveLength(1);
-    d.final('Tell me about a time you failed and what was the result and how did the team react', 2500);
+    d.final(
+      'Tell me about a time you failed and what was the result and how did the team react',
+      2500,
+    );
     expect(updates).toHaveLength(1);
     expect(updates[0]).toMatchObject({ restart: true, speculative: false, questionEndTs: 2500 });
     expect(updates[0]!.overlap).toBeLessThan(0.8);
@@ -79,12 +98,18 @@ describe('QuestionDetector', () => {
     vi.advanceTimersByTime(350);
     expect(questions).toHaveLength(1);
     d.interim('what would you do if a deploy failed at 2am and the on-call engineer', 1800);
-    d.interim('what would you do if a deploy failed at 2am and the on-call engineer is unreachable and customers are down', 2600);
+    d.interim(
+      'what would you do if a deploy failed at 2am and the on-call engineer is unreachable and customers are down',
+      2600,
+    );
     vi.advanceTimersByTime(350);
     expect(updates).toHaveLength(1);
     expect(updates[0]).toMatchObject({ restart: true, speculative: true });
     // The final matches the merged text → no further restart.
-    d.final('What would you do if a deploy failed at 2am and the on-call engineer is unreachable and customers are down?', 2700);
+    d.final(
+      'What would you do if a deploy failed at 2am and the on-call engineer is unreachable and customers are down?',
+      2700,
+    );
     expect(updates).toHaveLength(2);
     expect(updates[1]!.restart).toBe(false);
   });

@@ -22,7 +22,10 @@ export const DEFAULT_PROMPTS: Record<PromptName, string> = {
  * Minimal template renderer: `{var}` substitution and `{if flag}...{/if}` blocks.
  * Unknown variables render as empty strings.
  */
-export function renderTemplate(template: string, vars: Record<string, string | boolean | undefined>): string {
+export function renderTemplate(
+  template: string,
+  vars: Record<string, string | boolean | undefined>,
+): string {
   let out = template.replace(/\{if (\w+)\}([\s\S]*?)\{\/if\}/g, (_m, flag: string, body: string) =>
     vars[flag] ? body : '',
   );

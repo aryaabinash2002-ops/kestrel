@@ -75,7 +75,10 @@ export class LLMService {
   }
 
   /** Tiny request that opens the TLS connection and (if the prefix is cacheable) writes the cache. */
-  async warm(model: string, system: Anthropic.TextBlockParam[]): Promise<{ cacheWrite: number; cacheRead: number } | null> {
+  async warm(
+    model: string,
+    system: Anthropic.TextBlockParam[],
+  ): Promise<{ cacheWrite: number; cacheRead: number } | null> {
     try {
       const client = await this.getClient();
       const t0 = Date.now();
@@ -88,7 +91,9 @@ export class LLMService {
       });
       const cacheWrite = res.usage.cache_creation_input_tokens ?? 0;
       const cacheRead = res.usage.cache_read_input_tokens ?? 0;
-      log.info(`warm-up ${model} in ${Date.now() - t0} ms (cache write ${cacheWrite}, read ${cacheRead})`);
+      log.info(
+        `warm-up ${model} in ${Date.now() - t0} ms (cache write ${cacheWrite}, read ${cacheRead})`,
+      );
       return { cacheWrite, cacheRead };
     } catch (err) {
       log.warn('warm-up failed', err);
@@ -105,7 +110,8 @@ export class LLMService {
       messages: req.messages,
       stream: true,
     };
-    if (req.temperature !== undefined && /haiku/.test(req.model)) params.temperature = req.temperature;
+    if (req.temperature !== undefined && /haiku/.test(req.model))
+      params.temperature = req.temperature;
     if (req.fast && modelSupportsEffort(req.model)) {
       params.thinking = { type: 'disabled' };
       params.output_config = { effort: 'low' };
@@ -152,7 +158,9 @@ export class LLMService {
       max_tokens: req.maxTokens ?? 1024,
       system: req.system,
       messages: [{ role: 'user' as const, content: req.user }],
-      ...(modelSupportsEffort(req.model) ? { thinking: { type: 'disabled' as const }, output_config: { effort: 'low' as const } } : {}),
+      ...(modelSupportsEffort(req.model)
+        ? { thinking: { type: 'disabled' as const }, output_config: { effort: 'low' as const } }
+        : {}),
     };
     try {
       const res = await client.messages.create(
@@ -172,7 +180,10 @@ export class LLMService {
       if (err instanceof Anthropic.BadRequestError) {
         log.debug('structured output rejected, falling back to free-form JSON', err.message);
         const res = await client.messages.create(
-          { ...base, system: `${req.system}\n\nRespond with a single JSON object only, matching this JSON schema: ${JSON.stringify(req.schema)}` },
+          {
+            ...base,
+            system: `${req.system}\n\nRespond with a single JSON object only, matching this JSON schema: ${JSON.stringify(req.schema)}`,
+          },
           { signal: req.signal },
         );
         const text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('');

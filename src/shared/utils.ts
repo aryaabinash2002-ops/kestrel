@@ -18,7 +18,7 @@ export function isDeepObject(v: unknown): v is Record<string, unknown> {
 
 /** Deep-merge `patch` into `base` (arrays replaced, objects merged). Returns a new object. */
 export function deepMerge<T>(base: T, patch: unknown): T {
-  if (!isDeepObject(base) || !isDeepObject(patch)) return (patch === undefined ? base : (patch as T));
+  if (!isDeepObject(base) || !isDeepObject(patch)) return patch === undefined ? base : (patch as T);
   const out: Record<string, unknown> = { ...base };
   for (const [k, v] of Object.entries(patch)) {
     if (v === undefined) continue;

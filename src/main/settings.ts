@@ -48,7 +48,8 @@ export class SettingsStore extends EventEmitter {
   private assertNoSecrets(obj: unknown, path = ''): void {
     if (typeof obj !== 'object' || obj === null) return;
     for (const [k, v] of Object.entries(obj)) {
-      if (FORBIDDEN_KEYS.includes(k)) throw new Error(`Refusing to store secret-like key "${path}${k}" in settings`);
+      if (FORBIDDEN_KEYS.includes(k))
+        throw new Error(`Refusing to store secret-like key "${path}${k}" in settings`);
       this.assertNoSecrets(v, `${path}${k}.`);
     }
   }

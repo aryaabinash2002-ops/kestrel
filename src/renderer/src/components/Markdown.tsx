@@ -6,7 +6,15 @@ import { cn } from '@renderer/lib/utils';
  * Tiny dependency-free markdown renderer for model output: headings, bullet lists,
  * numbered lists, paragraphs, inline code and fenced code blocks (with a copy button).
  */
-export function Markdown({ text, className, streaming }: { text: string; className?: string; streaming?: boolean }) {
+export function Markdown({
+  text,
+  className,
+  streaming,
+}: {
+  text: string;
+  className?: string;
+  streaming?: boolean;
+}) {
   const blocks = parseBlocks(text);
   return (
     <div className={cn('prose-tight text-[13px] leading-snug', className)}>
@@ -16,7 +24,15 @@ export function Markdown({ text, className, streaming }: { text: string; classNa
           case 'code':
             return <CodeBlock key={i} code={b.text} lang={b.lang} streaming={streaming && last} />;
           case 'heading':
-            return b.level <= 2 ? <h2 key={i} className="text-sm">{inline(b.text)}</h2> : <h3 key={i} className="text-[13px]">{inline(b.text)}</h3>;
+            return b.level <= 2 ? (
+              <h2 key={i} className="text-sm">
+                {inline(b.text)}
+              </h2>
+            ) : (
+              <h3 key={i} className="text-[13px]">
+                {inline(b.text)}
+              </h3>
+            );
           case 'ul':
             return (
               <ul key={i}>
@@ -99,7 +115,11 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
     const buf: string[] = [];
-    while (i < lines.length && (lines[i] ?? '').trim() && !/^(```|#{1,6}\s|\s*[-*•]\s|\s*\d+[.)]\s)/.test(lines[i] ?? '')) {
+    while (
+      i < lines.length &&
+      (lines[i] ?? '').trim() &&
+      !/^(```|#{1,6}\s|\s*[-*•]\s|\s*\d+[.)]\s)/.test(lines[i] ?? '')
+    ) {
       buf.push(lines[i] ?? '');
       i++;
     }

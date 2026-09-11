@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import WebSocket from 'ws';
 
-vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] }, ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} } }));
+vi.mock('electron', () => ({
+  BrowserWindow: { getAllWindows: () => [] },
+  ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} },
+}));
 
 const { ExtensionBridge } = await import('@main/extension/ExtensionBridge');
 
@@ -25,7 +28,9 @@ afterEach(async () => {
 
 function connect(): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(bridge.pairing().url, { headers: { origin: 'chrome-extension://abcdefg' } });
+    const ws = new WebSocket(bridge.pairing().url, {
+      headers: { origin: 'chrome-extension://abcdefg' },
+    });
     ws.once('open', () => resolve(ws));
     ws.once('error', reject);
   });
@@ -48,14 +53,34 @@ describe('ExtensionBridge', () => {
 
     const ws = await connect();
     const welcome = next(ws);
-    ws.send(JSON.stringify({ type: 'hello', token: pairing.token, client: 'Chrome', version: '0.1.0' }));
-    expect(await welcome).toMatchObject({ type: 'welcome', appVersion: '0.1.0-test', sessionActive: true });
+    ws.send(
+      JSON.stringify({ type: 'hello', token: pairing.token, client: 'Chrome', version: '0.1.0' }),
+    );
+    expect(await welcome).toMatchObject({
+      type: 'welcome',
+      appVersion: '0.1.0-test',
+      sessionActive: true,
+    });
     expect(bridge.state().status).toBe('paired');
 
     ws.send(JSON.stringify({ type: 'capture', state: 'started' }));
     ws.send(Buffer.alloc(2560));
-    ws.send(JSON.stringify({ type: 'call', state: 'joined', url: 'https://meet.google.com/abc-defg-hij' }));
-    ws.send(JSON.stringify({ type: 'caption', speaker: 'Alice', text: 'Tell me about yourself', ts: Date.now(), isFinal: true }));
+    ws.send(
+      JSON.stringify({
+        type: 'call',
+        state: 'joined',
+        url: 'https://meet.google.com/abc-defg-hij',
+      }),
+    );
+    ws.send(
+      JSON.stringify({
+        type: 'caption',
+        speaker: 'Alice',
+        text: 'Tell me about yourself',
+        ts: Date.now(),
+        isFinal: true,
+      }),
+    );
     await wait(60);
     expect(audio).toHaveLength(1);
     expect(audio[0]?.length).toBe(2560);
@@ -83,7 +108,9 @@ describe('ExtensionBridge', () => {
     bridge.pairing();
     const ws = await connect();
     const err = next(ws);
-    ws.send(JSON.stringify({ type: 'hello', token: 'KES-NOPE-NOPE', client: 'Chrome', version: '0.1.0' }));
+    ws.send(
+      JSON.stringify({ type: 'hello', token: 'KES-NOPE-NOPE', client: 'Chrome', version: '0.1.0' }),
+    );
     expect(await err).toMatchObject({ type: 'error', code: 'bad-token' });
     await wait(50);
     expect(ws.readyState).toBe(WebSocket.CLOSED);
@@ -99,7 +126,9 @@ describe('ExtensionBridge', () => {
     expect(audio).toHaveLength(0);
     ws.close();
 
-    const bad = new WebSocket(bridge.pairing().url, { headers: { origin: 'https://evil.example' } });
+    const bad = new WebSocket(bridge.pairing().url, {
+      headers: { origin: 'https://evil.example' },
+    });
     const closed = new Promise<number>((r) => bad.once('close', (code) => r(code)));
     bad.once('error', () => undefined);
     expect(await closed).toBe(1008);

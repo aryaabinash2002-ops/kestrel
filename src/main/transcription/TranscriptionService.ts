@@ -1,7 +1,11 @@
 import { EventEmitter } from 'node:events';
 import type { Channel, Utterance } from '@shared/types/session';
 import type { Settings } from '@shared/types/settings';
-import type { TranscriberStats, TranscriptResult, TranscriptionState } from '@shared/types/transcription';
+import type {
+  TranscriberStats,
+  TranscriptResult,
+  TranscriptionState,
+} from '@shared/types/transcription';
 import { uid } from '@shared/utils';
 import type { AudioManager, PcmChunk } from '../audio/AudioManager';
 import type { SessionManager } from '../session/SessionManager';
@@ -46,7 +50,10 @@ const ME_HOLD_MS = 600;
 /** Close an utterance if the provider goes quiet for this long without speech_final. */
 const STALE_UTTERANCE_MS = 2500;
 
-export type TranscriberFactory = (opts: TranscriberOptions, provider: Settings['transcriber']) => ITranscriber;
+export type TranscriberFactory = (
+  opts: TranscriberOptions,
+  provider: Settings['transcriber'],
+) => ITranscriber;
 
 export const defaultTranscriberFactory: TranscriberFactory = (opts, provider) =>
   provider === 'assemblyai' ? new AssemblyAITranscriber(opts) : new DeepgramTranscriber(opts);
@@ -63,7 +70,10 @@ export class TranscriptionService extends EventEmitter {
   private builds: Record<Channel, Build> = { ME: this.blank(), THEM: this.blank() };
   private echo = new EchoFilter();
   private meHold: { u: Utterance; timer: NodeJS.Timeout; lastWordWallMs: number }[] = [];
-  private stats: Record<Channel, { interimCount: number; finalCount: number; gapSum: number; lastInterimAt: number }> = {
+  private stats: Record<
+    Channel,
+    { interimCount: number; finalCount: number; gapSum: number; lastInterimAt: number }
+  > = {
     ME: { interimCount: 0, finalCount: 0, gapSum: 0, lastInterimAt: 0 },
     THEM: { interimCount: 0, finalCount: 0, gapSum: 0, lastInterimAt: 0 },
   };
@@ -140,7 +150,14 @@ export class TranscriptionService extends EventEmitter {
       // KESTREL_STT_ENDPOINT lets developers point the app at a fake/local server.
       const endpoint = process.env['KESTREL_STT_ENDPOINT'] || undefined;
       const t = this.factory(
-        { channel: c, apiKey, language: settings.transcriptionLanguage, sampleRate: 16000, keyterms: this.keyterms(), endpoint },
+        {
+          channel: c,
+          apiKey,
+          language: settings.transcriptionLanguage,
+          sampleRate: 16000,
+          keyterms: this.keyterms(),
+          endpoint,
+        },
         provider,
       );
       t.on('result', (r: TranscriptResult) => this.onResult(r));
@@ -150,7 +167,12 @@ export class TranscriptionService extends EventEmitter {
         emit('transcription:state', s);
         this.emit('state', s);
         if (s.status === 'error') {
-          emit('toast', { kind: 'error', title: `Transcription (${c}) error`, message: s.message, sticky: true });
+          emit('toast', {
+            kind: 'error',
+            title: `Transcription (${c}) error`,
+            message: s.message,
+            sticky: true,
+          });
         }
       });
       this.transcribers[c] = t;
@@ -176,7 +198,11 @@ export class TranscriptionService extends EventEmitter {
     this.transcribers = {};
     await Promise.allSettled(ts.map((t) => t.close()));
     for (const c of ['ME', 'THEM'] as Channel[]) {
-      emit('transcription:state', { channel: c, status: 'idle', provider: this.getSettings().transcriber });
+      emit('transcription:state', {
+        channel: c,
+        status: 'idle',
+        provider: this.getSettings().transcriber,
+      });
     }
     log.info('transcription stopped');
   }
@@ -264,7 +290,11 @@ export class TranscriptionService extends EventEmitter {
       isFinal: true,
       source: 'stt',
     };
-    if (channel === 'THEM' && this.speakerHint && Math.abs(this.speakerHint.at - lastWordWallMs) < 4000) {
+    if (
+      channel === 'THEM' &&
+      this.speakerHint &&
+      Math.abs(this.speakerHint.at - lastWordWallMs) < 4000
+    ) {
       u.speakerName = this.speakerHint.name;
     }
     if (channel === 'ME' && this.audio.state().them.active) {
@@ -289,7 +319,11 @@ export class TranscriptionService extends EventEmitter {
 
   private commit(u: Utterance, lastWordWallMs: number): void {
     this.sessions.pushUtterance(u);
-    this.emit('final', { channel: u.speaker as Channel, utterance: u, lastWordWallMs } satisfies FinalEvent);
+    this.emit('final', {
+      channel: u.speaker as Channel,
+      utterance: u,
+      lastWordWallMs,
+    } satisfies FinalEvent);
   }
 
   /** Meet captions tell us who is speaking; label THEM utterances that end near the hint. */
@@ -298,7 +332,12 @@ export class TranscriptionService extends EventEmitter {
   }
 
   /** Inject a caption-derived utterance (extension fallback). */
-  pushExternalUtterance(channel: Channel, text: string, speakerName: string | undefined, isFinal: boolean): void {
+  pushExternalUtterance(
+    channel: Channel,
+    text: string,
+    speakerName: string | undefined,
+    isFinal: boolean,
+  ): void {
     const session = this.sessions.session;
     if (!session || !text.trim()) return;
     const now = Date.now();
@@ -317,7 +356,13 @@ export class TranscriptionService extends EventEmitter {
     if (isFinal) this.commit(u, now);
     else {
       emit('transcript:interim', { channel, text: u.text });
-      this.emit('interim', { channel, text: u.text, lastWordWallMs: now, receivedAt: now, isFinalSegment: false } satisfies InterimEvent);
+      this.emit('interim', {
+        channel,
+        text: u.text,
+        lastWordWallMs: now,
+        receivedAt: now,
+        isFinalSegment: false,
+      } satisfies InterimEvent);
     }
   }
 }

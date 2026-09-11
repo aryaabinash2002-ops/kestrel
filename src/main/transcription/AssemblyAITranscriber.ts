@@ -18,7 +18,11 @@ interface AaiTurn {
   end_of_turn_confidence: number;
   words: AaiWord[];
 }
-type AaiMessage = AaiTurn | { type: 'Begin'; id: string } | { type: 'Termination' } | { type: 'Error'; error?: string };
+type AaiMessage =
+  | AaiTurn
+  | { type: 'Begin'; id: string }
+  | { type: 'Termination' }
+  | { type: 'Error'; error?: string };
 
 export const ASSEMBLYAI_DEFAULT_ENDPOINT = 'wss://streaming.assemblyai.com/v3/ws';
 
@@ -144,11 +148,13 @@ export class AssemblyAITranscriber extends BaseTranscriber {
 
   protected sendKeepAlive(): void {
     // AssemblyAI has no keep-alive message; send 100 ms of silence instead.
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(Buffer.alloc((this.opts.sampleRate * 2) / 10));
+    if (this.ws?.readyState === WebSocket.OPEN)
+      this.ws.send(Buffer.alloc((this.opts.sampleRate * 2) / 10));
   }
 
   finalize(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ type: 'ForceEndpoint' }));
+    if (this.ws?.readyState === WebSocket.OPEN)
+      this.ws.send(JSON.stringify({ type: 'ForceEndpoint' }));
   }
 
   protected closeSocket(): Promise<void> {

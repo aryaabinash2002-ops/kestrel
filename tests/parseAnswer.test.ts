@@ -6,7 +6,9 @@ describe('parseAnswer', () => {
     const p1 = parseAnswer('HEADLINE: I led the migration of our billing');
     expect(p1.headline).toBe('I led the migration of our billing');
     expect(p1.headlineDone).toBe(false);
-    const p2 = parseAnswer('HEADLINE: I led the migration of our billing system.\nPOINTS:\n- Situation: legacy system\n- Task: cut inv');
+    const p2 = parseAnswer(
+      'HEADLINE: I led the migration of our billing system.\nPOINTS:\n- Situation: legacy system\n- Task: cut inv',
+    );
     expect(p2.headlineDone).toBe(true);
     expect(p2.points).toEqual(['Situation: legacy system']);
     expect(p2.partialPoint).toBe('Task: cut inv');
@@ -16,7 +18,9 @@ describe('parseAnswer', () => {
   });
 
   it('tolerates markdown decoration and numbered bullets', () => {
-    const p = parseAnswer('**HEADLINE:** Yes — I have shipped three production ML systems.\n**POINTS:**\n1. First\n2) Second\n* Third\n');
+    const p = parseAnswer(
+      '**HEADLINE:** Yes — I have shipped three production ML systems.\n**POINTS:**\n1. First\n2) Second\n* Third\n',
+    );
     expect(p.headline).toBe('Yes — I have shipped three production ML systems.');
     expect(p.points).toEqual(['First', 'Second', 'Third']);
   });
@@ -28,7 +32,9 @@ describe('parseAnswer', () => {
   });
 
   it('handles a wrapped headline', () => {
-    const p = parseAnswer('HEADLINE: My biggest strength is\nturning vague asks into shipped features.\nPOINTS:\n- x\n');
+    const p = parseAnswer(
+      'HEADLINE: My biggest strength is\nturning vague asks into shipped features.\nPOINTS:\n- x\n',
+    );
     expect(p.headline).toBe('My biggest strength is turning vague asks into shipped features.');
     expect(p.headlineDone).toBe(true);
   });

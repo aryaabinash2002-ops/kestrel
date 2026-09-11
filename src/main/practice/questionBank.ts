@@ -68,7 +68,10 @@ export const SYSTEM_DESIGN_QUESTIONS: string[] = [
   'How would you migrate a monolith to services without downtime?',
 ];
 
-export const STATIC_BANKS: Record<Exclude<PracticeSetId, 'role'>, { label: string; description: string; category: string; questions: string[] }> = {
+export const STATIC_BANKS: Record<
+  Exclude<PracticeSetId, 'role'>,
+  { label: string; description: string; category: string; questions: string[] }
+> = {
   behavioral: {
     label: 'Common behavioral',
     description: 'Tell-me-about-a-time classics: strengths, conflict, failure, leadership.',
@@ -104,11 +107,18 @@ export function shuffle<T>(items: T[], seed?: number): T[] {
   return out;
 }
 
-export function pickStatic(setId: Exclude<PracticeSetId, 'role'>, count: number, seed?: number): BankQuestion[] {
+export function pickStatic(
+  setId: Exclude<PracticeSetId, 'role'>,
+  count: number,
+  seed?: number,
+): BankQuestion[] {
   const bank = STATIC_BANKS[setId];
   // "Tell me about yourself" is a natural opener; keep it first when present.
   const opener = bank.questions[0];
   const rest = shuffle(bank.questions.slice(1), seed);
-  const chosen = setId === 'behavioral' && opener ? [opener, ...rest] : shuffle(bank.questions, seed);
-  return chosen.slice(0, Math.max(1, count)).map((question) => ({ question, category: bank.category }));
+  const chosen =
+    setId === 'behavioral' && opener ? [opener, ...rest] : shuffle(bank.questions, seed);
+  return chosen
+    .slice(0, Math.max(1, count))
+    .map((question) => ({ question, category: bank.category }));
 }

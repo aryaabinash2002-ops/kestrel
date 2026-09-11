@@ -39,7 +39,14 @@ export const useSession = create<SessionStoreState>((set, get) => ({
   },
   start: async (profileId) => {
     const state = await invoke('session:start', { profileId, mode: 'live' });
-    set({ state, utterances: [], cards: [], chips: [], screenshots: [], interim: { ME: '', THEM: '' } });
+    set({
+      state,
+      utterances: [],
+      cards: [],
+      chips: [],
+      screenshots: [],
+      interim: { ME: '', THEM: '' },
+    });
   },
   stop: async () => {
     const state = await invoke('session:stop');
@@ -90,7 +97,9 @@ function applyAnswerEvent(ev: AnswerEvent): void {
     case 'delta': {
       useSession.setState({
         cards: s.cards.map((c) =>
-          c.id === ev.id ? { ...c, headline: ev.headline, points: ev.points, content: ev.content } : c,
+          c.id === ev.id
+            ? { ...c, headline: ev.headline, points: ev.points, content: ev.content }
+            : c,
         ),
       });
       break;
@@ -98,7 +107,9 @@ function applyAnswerEvent(ev: AnswerEvent): void {
     case 'headline': {
       useSession.setState({
         cards: s.cards.map((c) =>
-          c.id === ev.id ? { ...c, headline: ev.headline, latency: { ...c.latency, headlineDoneTs: ev.ts } } : c,
+          c.id === ev.id
+            ? { ...c, headline: ev.headline, latency: { ...c.latency, headlineDoneTs: ev.ts } }
+            : c,
         ),
       });
       break;
@@ -118,7 +129,9 @@ function applyAnswerEvent(ev: AnswerEvent): void {
     }
     case 'error': {
       useSession.setState({
-        cards: s.cards.map((c) => (c.id === ev.id ? { ...c, status: 'error' as const, error: ev.error } : c)),
+        cards: s.cards.map((c) =>
+          c.id === ev.id ? { ...c, status: 'error' as const, error: ev.error } : c,
+        ),
       });
       break;
     }
@@ -129,7 +142,10 @@ function applyAnswerEvent(ev: AnswerEvent): void {
       break;
     }
     case 'chip': {
-      useSession.setState({ chips: [{ id: ev.id, question: ev.question }, ...s.chips].slice(0, 5), pendingQuestion: null });
+      useSession.setState({
+        chips: [{ id: ev.id, question: ev.question }, ...s.chips].slice(0, 5),
+        pendingQuestion: null,
+      });
       break;
     }
     case 'clear':
@@ -148,15 +164,21 @@ function applyScreenshotEvent(ev: ScreenshotEvent): void {
       break;
     case 'delta':
       useSession.setState({
-        screenshots: s.screenshots.map((x) => (x.id === ev.id ? { ...x, result: x.result + ev.text } : x)),
+        screenshots: s.screenshots.map((x) =>
+          x.id === ev.id ? { ...x, result: x.result + ev.text } : x,
+        ),
       });
       break;
     case 'done':
-      useSession.setState({ screenshots: s.screenshots.map((x) => (x.id === ev.id ? ev.result : x)) });
+      useSession.setState({
+        screenshots: s.screenshots.map((x) => (x.id === ev.id ? ev.result : x)),
+      });
       break;
     case 'error':
       useSession.setState({
-        screenshots: s.screenshots.map((x) => (x.id === ev.id ? { ...x, status: 'error', result: x.result + `\n\n⚠ ${ev.error}` } : x)),
+        screenshots: s.screenshots.map((x) =>
+          x.id === ev.id ? { ...x, status: 'error', result: x.result + `\n\n⚠ ${ev.error}` } : x,
+        ),
       });
       break;
   }

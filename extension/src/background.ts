@@ -67,7 +67,13 @@ async function startCapture(preferredTab?: number): Promise<void> {
     await ensureOffscreen();
     status.tabId = tab.id;
     status.lastError = null;
-    await send({ type: 'offscreen-start', streamId, token: settings.token, port: settings.port, tabId: tab.id });
+    await send({
+      type: 'offscreen-start',
+      streamId,
+      token: settings.token,
+      port: settings.port,
+      tabId: tab.id,
+    });
     await chrome.action.setBadgeText({ text: 'ON' });
     await chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
   } catch (err) {
@@ -106,13 +112,15 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
       return true;
     case 'offscreen-status':
       Object.assign(status, msg.status);
-      if (status.connection !== 'connected' && !status.capturing) void chrome.action.setBadgeText({ text: '' });
+      if (status.connection !== 'connected' && !status.capturing)
+        void chrome.action.setBadgeText({ text: '' });
       return false;
     case 'app-message':
       if (msg.message.type === 'session') {
         status.sessionActive = msg.message.active;
         // When Kestrel starts a session while we are on a call, start capture (needs a prior user gesture on the tab).
-        if (msg.message.active && status.inCall && !status.capturing) void startCapture(status.tabId ?? undefined);
+        if (msg.message.active && status.inCall && !status.capturing)
+          void startCapture(status.tabId ?? undefined);
       } else if (msg.message.type === 'request-capture') {
         if (msg.message.start) void startCapture(status.tabId ?? undefined);
         else void stopCapture();
@@ -121,7 +129,10 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
     case 'meet-call': {
       status.inCall = msg.state === 'joined';
       if (sender.tab?.id) status.tabId = status.inCall ? sender.tab.id : status.tabId;
-      void send({ type: 'offscreen-forward', payload: { type: 'call', state: msg.state, url: msg.url } });
+      void send({
+        type: 'offscreen-forward',
+        payload: { type: 'call', state: msg.state, url: msg.url },
+      });
       if (msg.state === 'left' && status.capturing) void stopCapture();
       if (msg.state === 'joined') {
         void loadSettings().then((s) => {
@@ -132,7 +143,16 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
     }
     case 'meet-caption':
       status.captionsSeen = true;
-      void send({ type: 'offscreen-forward', payload: { type: 'caption', speaker: msg.speaker, text: msg.text, ts: msg.ts, isFinal: msg.isFinal } });
+      void send({
+        type: 'offscreen-forward',
+        payload: {
+          type: 'caption',
+          speaker: msg.speaker,
+          text: msg.text,
+          ts: msg.ts,
+          isFinal: msg.isFinal,
+        },
+      });
       return false;
     default:
       return false;

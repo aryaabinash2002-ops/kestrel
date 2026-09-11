@@ -4,7 +4,10 @@ import type { Utterance } from '@shared/types/session';
 import type { TranscriptResult } from '@shared/types/transcription';
 import { DEFAULT_SETTINGS } from '@shared/types/settings';
 
-vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] }, ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} } }));
+vi.mock('electron', () => ({
+  BrowserWindow: { getAllWindows: () => [] },
+  ipcMain: { on: () => {}, handle: () => {}, removeHandler: () => {} },
+}));
 
 const { TranscriptionService } = await import('@main/transcription/TranscriptionService');
 type ITranscriber = import('@main/transcription/ITranscriber').ITranscriber;
@@ -73,7 +76,10 @@ describe('TranscriptionService', () => {
   it('builds utterances from interim + final segments and commits on speech_final', async () => {
     const { svc, pushed, fakes, audio } = harness();
     const interims: string[] = [];
-    svc.on('interim', (e: { channel: string; text: string }) => e.channel === 'THEM' && interims.push(e.text));
+    svc.on(
+      'interim',
+      (e: { channel: string; text: string }) => e.channel === 'THEM' && interims.push(e.text),
+    );
     await svc.start();
     audio.emit('pcm', { channel: 'THEM', pcm: Buffer.alloc(10), ts: Date.now(), source: 'local' });
     expect(fakes.THEM!.sent).toHaveLength(1);
@@ -82,7 +88,12 @@ describe('TranscriptionService', () => {
     fakes.THEM!.result({ text: 'Tell me about', isFinal: true });
     fakes.THEM!.result({ text: 'a time you' });
     fakes.THEM!.result({ text: 'a time you failed.', isFinal: true, speechFinal: true });
-    expect(interims).toEqual(['tell me', 'Tell me about', 'Tell me about a time you', 'Tell me about a time you failed.']);
+    expect(interims).toEqual([
+      'tell me',
+      'Tell me about',
+      'Tell me about a time you',
+      'Tell me about a time you failed.',
+    ]);
     expect(pushed).toHaveLength(1);
     expect(pushed[0]?.text).toBe('Tell me about a time you failed.');
     expect(pushed[0]?.speaker).toBe('THEM');
@@ -94,9 +105,17 @@ describe('TranscriptionService', () => {
   it('drops ME utterances that echo THEM (speakers, no headphones)', async () => {
     const { svc, pushed, fakes } = harness();
     await svc.start();
-    fakes.THEM!.result({ text: 'What is your greatest weakness?', isFinal: true, speechFinal: true });
+    fakes.THEM!.result({
+      text: 'What is your greatest weakness?',
+      isFinal: true,
+      speechFinal: true,
+    });
     fakes.ME!.result({ text: 'what is your greatest weakness', isFinal: true, speechFinal: true });
-    fakes.ME!.result({ text: 'I would say I take on too much sometimes', isFinal: true, speechFinal: true });
+    fakes.ME!.result({
+      text: 'I would say I take on too much sometimes',
+      isFinal: true,
+      speechFinal: true,
+    });
     await vi.advanceTimersByTimeAsync(700); // ME hold
     expect(pushed.map((u) => `${u.speaker}:${u.text}`)).toEqual([
       'THEM:What is your greatest weakness?',

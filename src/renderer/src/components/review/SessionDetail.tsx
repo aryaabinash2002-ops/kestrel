@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Copy, Download, FileText, FolderOpen, Loader2, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Download,
+  FileText,
+  FolderOpen,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Badge } from '@renderer/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card';
@@ -22,7 +31,13 @@ function dirOf(path: string): string {
   return i > 0 ? path.slice(0, i) : path;
 }
 
-export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; onBack: () => void }) {
+export function SessionDetail({
+  detail,
+  onBack,
+}: {
+  detail: SessionDetailData;
+  onBack: () => void;
+}) {
   const { session, utterances, answers, screenshots } = detail;
   const generating = useReview((s) => s.generating);
   const exporting = useReview((s) => s.exporting);
@@ -40,13 +55,24 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
       await generate(session.id);
       toast({ kind: 'success', title: 'Review ready' });
     } catch (err) {
-      toast({ kind: 'error', title: 'Could not generate the review', message: err instanceof Error ? err.message : String(err) });
+      toast({
+        kind: 'error',
+        title: 'Could not generate the review',
+        message: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
   // Auto-generate once when a finished session with a transcript is opened without a review.
   useEffect(() => {
-    if (summary || !session.endedAt || finals.length < 4 || !hasAnthropic || autoTried.has(session.id)) return;
+    if (
+      summary ||
+      !session.endedAt ||
+      finals.length < 4 ||
+      !hasAnthropic ||
+      autoTried.has(session.id)
+    )
+      return;
     autoTried.add(session.id);
     void runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,7 +89,11 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
       });
       void invoke('app:openPath', dirOf(path));
     } catch (err) {
-      toast({ kind: 'error', title: 'Export failed', message: err instanceof Error ? err.message : String(err) });
+      toast({
+        kind: 'error',
+        title: 'Export failed',
+        message: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
@@ -75,23 +105,45 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
         </Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-sm font-semibold">{session.profileName ?? (session.mode === 'practice' ? 'Practice session' : 'Live session')}</h1>
+            <h1 className="truncate text-sm font-semibold">
+              {session.profileName ??
+                (session.mode === 'practice' ? 'Practice session' : 'Live session')}
+            </h1>
             {!session.endedAt && <Badge variant="success">Live</Badge>}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {sessionDate(session.startedAt)} · {sessionDuration(session)} · {finals.length} lines · {doneAnswers.length} answers
+            {sessionDate(session.startedAt)} · {sessionDuration(session)} · {finals.length} lines ·{' '}
+            {doneAnswers.length} answers
             {screenshots.length ? ` · ${screenshots.length} screenshots` : ''}
           </p>
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-1.5 px-3 pt-2">
-        <Button size="sm" onClick={() => void runGenerate()} disabled={generating || finals.length === 0} title={finals.length === 0 ? 'Nothing was transcribed in this session' : undefined}>
-          {generating ? <Loader2 className="animate-spin" /> : <Sparkles />} {summary ? 'Regenerate review' : 'Generate review'}
+        <Button
+          size="sm"
+          onClick={() => void runGenerate()}
+          disabled={generating || finals.length === 0}
+          title={finals.length === 0 ? 'Nothing was transcribed in this session' : undefined}
+        >
+          {generating ? <Loader2 className="animate-spin" /> : <Sparkles />}{' '}
+          {summary ? 'Regenerate review' : 'Generate review'}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => void runExport('md')} disabled={exporting !== null} title="Export as Markdown">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void runExport('md')}
+          disabled={exporting !== null}
+          title="Export as Markdown"
+        >
           {exporting === 'md' ? <Loader2 className="animate-spin" /> : <Download />} Markdown
         </Button>
-        <Button size="sm" variant="outline" onClick={() => void runExport('pdf')} disabled={exporting !== null} title="Export as PDF">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void runExport('pdf')}
+          disabled={exporting !== null}
+          title="Export as PDF"
+        >
           {exporting === 'pdf' ? <Loader2 className="animate-spin" /> : <FileText />} PDF
         </Button>
       </div>
@@ -99,7 +151,9 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
         <TabsList className="w-full justify-start">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="transcript">Transcript</TabsTrigger>
-          <TabsTrigger value="answers">Answers{doneAnswers.length ? ` (${doneAnswers.length})` : ''}</TabsTrigger>
+          <TabsTrigger value="answers">
+            Answers{doneAnswers.length ? ` (${doneAnswers.length})` : ''}
+          </TabsTrigger>
           {screenshots.length > 0 && <TabsTrigger value="screenshots">Screens</TabsTrigger>}
         </TabsList>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">
@@ -123,7 +177,9 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
             ) : (
               <>
                 <Section title="Summary">
-                  <p className="whitespace-pre-wrap text-[13px] leading-snug selectable">{summary.summary}</p>
+                  <p className="whitespace-pre-wrap text-[13px] leading-snug selectable">
+                    {summary.summary}
+                  </p>
                 </Section>
                 <Section title={`Questions asked (${summary.questions.length})`}>
                   {summary.questions.length ? (
@@ -140,7 +196,10 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
                   {summary.weakSpots.length ? (
                     <ul className="space-y-1.5 text-[13px] selectable">
                       {summary.weakSpots.map((w, i) => (
-                        <li key={i} className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1.5 leading-snug">
+                        <li
+                          key={i}
+                          className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1.5 leading-snug"
+                        >
                           {w}
                         </li>
                       ))}
@@ -149,8 +208,13 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
                     <Empty>No weak spots noted — nice work.</Empty>
                   )}
                 </Section>
-                <Section title="Follow-up email" action={<CopyButton text={summary.followUpEmail} label="Copy email" />}>
-                  <pre className="whitespace-pre-wrap rounded-md border border-border/60 bg-muted/30 p-2.5 font-sans text-[12.5px] leading-snug selectable">{summary.followUpEmail || 'Not generated.'}</pre>
+                <Section
+                  title="Follow-up email"
+                  action={<CopyButton text={summary.followUpEmail} label="Copy email" />}
+                >
+                  <pre className="whitespace-pre-wrap rounded-md border border-border/60 bg-muted/30 p-2.5 font-sans text-[12.5px] leading-snug selectable">
+                    {summary.followUpEmail || 'Not generated.'}
+                  </pre>
                 </Section>
                 <Section title="Action items">
                   {summary.actionItems.length ? (
@@ -166,7 +230,9 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
                     <Empty>None.</Empty>
                   )}
                 </Section>
-                <p className="text-[10px] text-muted-foreground">Generated {new Date(summary.generatedAt).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Generated {new Date(summary.generatedAt).toLocaleString()}
+                </p>
               </>
             )}
           </TabsContent>
@@ -174,9 +240,17 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
             <TranscriptView utterances={utterances} interim={EMPTY_INTERIM} className="h-full" />
           </TabsContent>
           <TabsContent value="answers" className="space-y-2">
-            {doneAnswers.length === 0 && <Empty>No answers were suggested during this session.</Empty>}
+            {doneAnswers.length === 0 && (
+              <Empty>No answers were suggested during this session.</Empty>
+            )}
             {doneAnswers.map((a) => (
-              <AnswerCard key={a.id} card={a} showLatency={false} collapsedDefault={false} onDismiss={noop} />
+              <AnswerCard
+                key={a.id}
+                card={a}
+                showLatency={false}
+                collapsedDefault={false}
+                onDismiss={noop}
+              />
             ))}
           </TabsContent>
           <TabsContent value="screenshots" className="space-y-2">
@@ -185,12 +259,19 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
                 <CardHeader className="pb-1">
                   <CardTitle className="flex items-center justify-between text-xs">
                     <span>{new Date(s.createdAt).toLocaleTimeString()}</span>
-                    <Button size="xs" variant="ghost" onClick={() => void invoke('app:openPath', s.path)} title={s.path}>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => void invoke('app:openPath', s.path)}
+                      title={s.path}
+                    >
                       <FolderOpen /> Open image
                     </Button>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="selectable">{s.result ? <Markdown text={s.result} /> : <Empty>No result recorded.</Empty>}</CardContent>
+                <CardContent className="selectable">
+                  {s.result ? <Markdown text={s.result} /> : <Empty>No result recorded.</Empty>}
+                </CardContent>
               </Card>
             ))}
           </TabsContent>
@@ -200,11 +281,21 @@ export function SessionDetail({ detail, onBack }: { detail: SessionDetailData; o
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-1">
-        <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">{title}</CardTitle>
+        <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">
+          {title}
+        </CardTitle>
         {action}
       </CardHeader>
       <CardContent>{children}</CardContent>

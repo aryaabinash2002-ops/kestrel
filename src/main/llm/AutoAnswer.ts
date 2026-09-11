@@ -1,8 +1,16 @@
 import type { Settings } from '@shared/types/settings';
 import type { QuestionType } from '@shared/types/session';
 import { wordOverlap } from '@shared/utils';
-import { QuestionDetector, type DetectedQuestion, type QuestionUpdate } from '../detection/QuestionDetector';
-import type { FinalEvent, InterimEvent, TranscriptionService } from '../transcription/TranscriptionService';
+import {
+  QuestionDetector,
+  type DetectedQuestion,
+  type QuestionUpdate,
+} from '../detection/QuestionDetector';
+import type {
+  FinalEvent,
+  InterimEvent,
+  TranscriptionService,
+} from '../transcription/TranscriptionService';
 import type { SessionManager } from '../session/SessionManager';
 import type { AnswerEngine } from './AnswerEngine';
 import type { Classifier } from './Classifier';
@@ -21,7 +29,10 @@ export class AutoAnswer {
   private classifyController: AbortController | null = null;
   /** card id per detector key, so finals/restarts address the right card */
   private cardByKey = new Map<string, string>();
-  private lastClassified = new Map<string, { type: QuestionType; isQuestion: boolean; text: string }>();
+  private lastClassified = new Map<
+    string,
+    { type: QuestionType; isQuestion: boolean; text: string }
+  >();
 
   constructor(
     transcription: TranscriptionService,
@@ -57,7 +68,12 @@ export class AutoAnswer {
   private onQuestion(q: DetectedQuestion): void {
     if (!this.enabled()) return;
     emit('question:detected', { text: q.text, speculative: q.speculative, ts: q.questionEndTs });
-    this.engine.requestAuto({ question: q.text, kind: 'auto', speculative: q.speculative, questionEndTs: q.questionEndTs });
+    this.engine.requestAuto({
+      question: q.text,
+      kind: 'auto',
+      speculative: q.speculative,
+      questionEndTs: q.questionEndTs,
+    });
     const active = this.engine.activeQuestion();
     if (active && wordOverlap(active.question, q.text) >= 0.8) this.cardByKey.set(q.key, active.id);
     void this.classify(q.key, q.text);
@@ -76,7 +92,13 @@ export class AutoAnswer {
     emit('question:detected', { text: u.text, speculative: u.speculative, ts: u.questionEndTs });
     const active = this.engine.activeQuestion();
     const restartOf = cardId && active?.id === cardId ? cardId : undefined;
-    this.engine.requestAuto({ question: u.text, kind: 'auto', speculative: u.speculative, questionEndTs: u.questionEndTs, restartOf });
+    this.engine.requestAuto({
+      question: u.text,
+      kind: 'auto',
+      speculative: u.speculative,
+      questionEndTs: u.questionEndTs,
+      restartOf,
+    });
     const now = this.engine.activeQuestion();
     if (now) this.cardByKey.set(u.key, now.id);
     void this.classify(u.key, u.text);

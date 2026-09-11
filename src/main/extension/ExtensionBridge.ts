@@ -1,7 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { randomBytes } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { AppToExtensionMessage, ExtensionPairingInfo, ExtensionState, ExtensionToAppMessage } from '@shared/types/extension';
+import type {
+  AppToExtensionMessage,
+  ExtensionPairingInfo,
+  ExtensionState,
+  ExtensionToAppMessage,
+} from '@shared/types/extension';
 import { emit } from '../ipc';
 import { logger } from '../logger';
 
@@ -53,11 +58,19 @@ export class ExtensionBridge extends EventEmitter {
   pairing(): ExtensionPairingInfo {
     let token = this.deps.getToken();
     if (!token) token = this.regenerateToken();
-    return { port: this.port || this.deps.getPort(), token, url: `ws://127.0.0.1:${this.port || this.deps.getPort()}/` };
+    return {
+      port: this.port || this.deps.getPort(),
+      token,
+      url: `ws://127.0.0.1:${this.port || this.deps.getPort()}/`,
+    };
   }
 
   regenerateToken(): string {
-    const raw = randomBytes(6).toString('base64url').replace(/[-_]/g, 'x').toUpperCase().slice(0, 8);
+    const raw = randomBytes(6)
+      .toString('base64url')
+      .replace(/[-_]/g, 'x')
+      .toUpperCase()
+      .slice(0, 8);
     const token = `KES-${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
     this.deps.setToken(token);
     if (this.client) this.client.close(4001, 'token changed');
@@ -89,7 +102,9 @@ export class ExtensionBridge extends EventEmitter {
       const wss = new WebSocketServer({ host: '127.0.0.1', port, maxPayload: 1024 * 1024 });
       wss.once('listening', () => {
         this.wss = wss;
-        wss.on('connection', (ws, req) => this.onConnection(ws, String(req.headers['origin'] ?? '')));
+        wss.on('connection', (ws, req) =>
+          this.onConnection(ws, String(req.headers['origin'] ?? '')),
+        );
         resolve();
       });
       wss.once('error', (err) => reject(err));
@@ -98,7 +113,11 @@ export class ExtensionBridge extends EventEmitter {
 
   private onConnection(ws: WebSocket, origin: string): void {
     // Only browser extensions (chrome-extension://…) or local tools; never remote pages.
-    if (origin && !/^chrome-extension:\/\//.test(origin) && !/^(https?:\/\/)?(localhost|127\.0\.0\.1)/.test(origin)) {
+    if (
+      origin &&
+      !/^chrome-extension:\/\//.test(origin) &&
+      !/^(https?:\/\/)?(localhost|127\.0\.0\.1)/.test(origin)
+    ) {
       log.warn('rejected origin', origin);
       ws.close(1008, 'origin');
       return;
@@ -127,13 +146,21 @@ export class ExtensionBridge extends EventEmitter {
         if (msg.type !== 'hello') return;
         const expected = this.deps.getToken();
         if (!expected || msg.token !== expected) {
-          this.send(ws, { type: 'error', code: 'bad-token', message: 'Pairing token does not match. Copy it from Kestrel → Settings → Audio.' });
+          this.send(ws, {
+            type: 'error',
+            code: 'bad-token',
+            message: 'Pairing token does not match. Copy it from Kestrel → Settings → Audio.',
+          });
           ws.close(4003, 'bad token');
           return;
         }
         if (this.client && this.client !== ws && this.client.readyState === this.client.OPEN) {
           // Newest connection wins (e.g. browser restarted); tell the old one.
-          this.send(this.client, { type: 'error', code: 'busy', message: 'Another extension instance connected.' });
+          this.send(this.client, {
+            type: 'error',
+            code: 'busy',
+            message: 'Another extension instance connected.',
+          });
           this.client.close(4002, 'replaced');
         }
         authed = true;
@@ -141,7 +168,11 @@ export class ExtensionBridge extends EventEmitter {
         this.client = ws;
         this.clientName = `${msg.client} · ext ${msg.version}`;
         this.setStatus('paired');
-        this.send(ws, { type: 'welcome', appVersion: this.deps.appVersion, sessionActive: this.deps.isSessionActive() });
+        this.send(ws, {
+          type: 'welcome',
+          appVersion: this.deps.appVersion,
+          sessionActive: this.deps.isSessionActive(),
+        });
         log.info('extension paired:', this.clientName);
         return;
       }
@@ -166,7 +197,12 @@ export class ExtensionBridge extends EventEmitter {
             this.captionsAvailable = false;
             this.broadcastState();
           }, 15000);
-          this.emit('caption', { speaker: msg.speaker, text: msg.text, ts: msg.ts, isFinal: msg.isFinal });
+          this.emit('caption', {
+            speaker: msg.speaker,
+            text: msg.text,
+            ts: msg.ts,
+            isFinal: msg.isFinal,
+          });
           break;
         default:
           break;

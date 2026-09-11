@@ -43,7 +43,11 @@ export default function Setup() {
   if (editing !== null) {
     return (
       <Page title={editing === 'new' ? 'New profile' : 'Edit profile'}>
-        <ProfileForm key={editing === 'new' ? 'new' : editing.id} profile={editing === 'new' ? null : editing} onDone={closeEditor} />
+        <ProfileForm
+          key={editing === 'new' ? 'new' : editing.id}
+          profile={editing === 'new' ? null : editing}
+          onDone={closeEditor}
+        />
       </Page>
     );
   }
@@ -54,7 +58,12 @@ export default function Setup() {
       subtitle="Profiles ground every answer in your résumé, the job and your stories."
       actions={
         <>
-          <Button size="sm" variant="outline" onClick={() => setTestOpen(true)} title="Check that the other party's audio is captured and transcribed">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setTestOpen(true)}
+            title="Check that the other party's audio is captured and transcribed"
+          >
             <FlaskConical /> Test with Meet
           </Button>
           <Button size="sm" onClick={() => setEditing('new')}>
@@ -68,7 +77,10 @@ export default function Setup() {
           <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
             <Sparkles className="size-6 text-primary" />
             <p className="text-sm">Create your first session profile</p>
-            <p className="max-w-xs text-xs text-muted-foreground">Add the role, company, your résumé and the job description. Takes two minutes and makes every answer specific to you.</p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Add the role, company, your résumé and the job description. Takes two minutes and
+              makes every answer specific to you.
+            </p>
             <Button size="sm" onClick={() => setEditing('new')}>
               <Plus /> New profile
             </Button>
@@ -93,11 +105,13 @@ export default function Setup() {
                   <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                     {(p.role || p.company) && (
                       <span className="flex items-center gap-1">
-                        <Briefcase className="size-3" /> {[p.role, p.company].filter(Boolean).join(' @ ')}
+                        <Briefcase className="size-3" />{' '}
+                        {[p.role, p.company].filter(Boolean).join(' @ ')}
                       </span>
                     )}
                     <span className="flex items-center gap-1">
-                      <FileText className="size-3" /> {p.resumeText ? 'résumé' : 'no résumé'} · {p.jdText ? 'JD' : 'no JD'} · {p.stories.length} stories
+                      <FileText className="size-3" /> {p.resumeText ? 'résumé' : 'no résumé'} ·{' '}
+                      {p.jdText ? 'JD' : 'no JD'} · {p.stories.length} stories
                     </span>
                   </div>
                 </div>
@@ -114,7 +128,13 @@ export default function Setup() {
           );
         })}
       </div>
-      {startFor !== undefined && <StartSessionDialog open onOpenChange={(o) => !o && setStartFor(undefined)} initialProfileId={startFor} />}
+      {startFor !== undefined && (
+        <StartSessionDialog
+          open
+          onOpenChange={(o) => !o && setStartFor(undefined)}
+          initialProfileId={startFor}
+        />
+      )}
       <TestWithMeet open={testOpen} onOpenChange={setTestOpen} />
     </Page>
   );

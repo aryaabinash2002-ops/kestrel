@@ -65,13 +65,20 @@ export class FakeDeepgramServer {
   }
 
   /** Emit a Results message. `start`/`end` in seconds of audio time. */
-  results(text: string, opts: { isFinal?: boolean; speechFinal?: boolean; start?: number; end?: number } = {}): void {
+  results(
+    text: string,
+    opts: { isFinal?: boolean; speechFinal?: boolean; start?: number; end?: number } = {},
+  ): void {
     const start = opts.start ?? 0;
     const end = opts.end ?? start + Math.max(0.2, text.split(' ').length * 0.3);
     const words: FakeDgWord[] = text
       .split(' ')
       .filter(Boolean)
-      .map((w, i, arr) => ({ word: w, start: start + ((end - start) * i) / arr.length, end: start + ((end - start) * (i + 1)) / arr.length }));
+      .map((w, i, arr) => ({
+        word: w,
+        start: start + ((end - start) * i) / arr.length,
+        end: start + ((end - start) * (i + 1)) / arr.length,
+      }));
     this.send({
       type: 'Results',
       is_final: !!opts.isFinal,
