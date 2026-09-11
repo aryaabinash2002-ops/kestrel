@@ -69,6 +69,18 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * Concurrency rules live in `AnswerEngine.requestAuto` (M5 section). Diagnostics report speculative share and restart rate (`restarts / speculativeStarts`, target < 20 %).
 * `tests/e2e.instantAnswer.test.ts` streams `tests/fixtures/question.wav` (16 kHz PCM) through the real `TranscriptionService` + `DeepgramTranscriber` (against the fake Deepgram) into `AutoAnswer` + `AnswerEngine` (against the fake Anthropic) and asserts: the answer starts before the final transcript exists, a matching final does not restart it, a materially longer final does, statements never answer, smalltalk becomes a chip.
 
+## Profiles & session setup (M7)
+
+* `docs/parseResume.ts` extracts text from PDF (`pdf-parse` v2 `PDFParse.getText`), DOCX (`mammoth.extractRawText`), TXT/MD, then normalises whitespace and unwraps mid-sentence line breaks; capped at 60 k chars. Files chosen through the native dialog are copied to `data/files/documents/`; drag-and-drop from the renderer arrives as base64.
+* Setup screen: profile cards → `ProfileForm` (role/company/type/language/length/tone, résumé + JD paste-or-import, story bank of up to 12 STAR stories, notes). Deep links: `#/setup?new=1`, `#/setup?test=1`.
+* `StartSessionDialog` is the only way a new live session starts from the UI: profile picker + the §11 per-session consent checkbox, then `session:start` → `audio:start`. `settings.lastProfileId` remembers the profile for auto-started (Meet) sessions.
+* `TestWithMeet` runs a throw-away session, shows the THEM level, transcription socket status and the latest THEM text, and deletes the session on close.
+
+## Screenshot solve (M8)
+
+* `screenshot/ScreenshotService.ts`: hides the Kestrel panel for ~120 ms, captures the display under the cursor with `desktopCapturer.getSources` at native resolution, then (region mode) opens a transparent always-on-top overlay window per display (`src/renderer/region/`, preload `region.ts`) showing the frozen frame: drag = region, click/Enter = whole screen, Esc = cancel. The crop is saved to `data/files/screenshots/<id>.png`, inserted into `screenshots`, downscaled to ≤ 1600 px for the model, and sent as a base64 image block to the strong model (`models.heavy`, adaptive thinking, effort medium) with the `screenshot_solve` template (problem → approach → pseudocode → complexity → edge cases → code in the preferred language). The last 90 s of THEM speech is attached as context. Output streams via `screenshot:event` and renders with the dependency-free `Markdown` component (code blocks get a copy button).
+* Hotkey `screenshotSolve` (default ⌘⇧S) opens region selection; the Live screen's *Solve screen* button does the same.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

@@ -1,0 +1,13 @@
+Jane Doe
+Senior Software Engineer — jane@example.com
+
+EXPERIENCE
+Globex Corporation, Senior Engineer (2020–2024)
+- Led the billing migration to Stripe with zero downtime; recovered $1.2M annually.
+- Mentored 4 engineers; introduced trunk-based development.
+
+Initech, Software Engineer (2017–2020)
+- Built the reporting pipeline on Kafka and Postgres.
+
+EDUCATION
+B.Sc. Computer Science, State University, 2017

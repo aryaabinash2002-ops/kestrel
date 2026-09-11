@@ -28,6 +28,7 @@ export default defineConfig({
         input: {
           index: resolve('src/preload/index.ts'),
           capture: resolve('src/preload/capture.ts'),
+          region: resolve('src/preload/region.ts'),
         },
       },
     },

@@ -44,7 +44,7 @@ The extension captures only the Meet tab's audio (no notifications or music) and
 | 5 | LLM answers, prompt caching, warm connection, latency logging | ✅ (verified against a fake Anthropic server; real-key run pending) |
 | 6 | Instant auto-answering (speculative, parallel classifier) | ✅ (E2E with audio fixture + fake servers; tuning on a real Meet call pending) |
 | 7 | Profiles: résumé/JD upload, story bank, "Test with Meet" | ⏳ |
-| 8 | Screenshot solve | ⏳ |
+| 8 | Screenshot solve | ✅ (full-screen path smoke-tested; region overlay needs a manual drag) |
 | 9 | Follow-up chat box | ⏳ |
 | 10 | Post-session review + export | ⏳ |
 | 11 | Practice mode | ⏳ |

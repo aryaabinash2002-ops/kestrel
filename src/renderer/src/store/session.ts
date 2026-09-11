@@ -17,6 +17,7 @@ interface SessionStoreState {
   stop: () => Promise<void>;
   clearCards: () => void;
   dismissCard: (id: string) => void;
+  dismissScreenshot: (id: string) => void;
 }
 
 const MAX_UTTERANCES = 600;
@@ -49,6 +50,7 @@ export const useSession = create<SessionStoreState>((set, get) => ({
     set({ cards: [], chips: [] });
   },
   dismissCard: (id) => set({ cards: get().cards.filter((c) => c.id !== id) }),
+  dismissScreenshot: (id) => set({ screenshots: get().screenshots.filter((c) => c.id !== id) }),
 }));
 
 on('session:state', (state) => useSession.setState({ state }));

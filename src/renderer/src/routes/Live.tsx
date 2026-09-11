@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Eraser, Mic, Square, Zap } from 'lucide-react';
+import { Camera, ChevronDown, ChevronUp, Eraser, Mic, Square, Zap } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Kbd } from '@renderer/components/ui/kbd';
 import { ChannelStrip } from '@renderer/components/ChannelStrip';
 import { TranscriptView } from '@renderer/components/TranscriptView';
 import { TranscriptionStatus } from '@renderer/components/TranscriptionStatus';
 import { AnswerCard } from '@renderer/components/AnswerCard';
+import { ScreenshotCard } from '@renderer/components/ScreenshotCard';
+import { StartSessionDialog } from '@renderer/components/setup/StartSessionDialog';
+import { useProfiles } from '@renderer/store/profiles';
 import { useAudio } from '@renderer/store/audio';
 import { useSession } from '@renderer/store/session';
 import { useSettings } from '@renderer/store/settings';
@@ -29,15 +32,23 @@ export default function Live() {
   const chips = useSession((s) => s.chips);
   const pending = useSession((s) => s.pendingQuestion);
   const dismissCard = useSession((s) => s.dismissCard);
+  const screenshots = useSession((s) => s.screenshots);
+  const dismissScreenshot = useSession((s) => s.dismissScreenshot);
   const clearCards = useSession((s) => s.clearCards);
-  const startSession = useSession((s) => s.start);
   const stopSession = useSession((s) => s.stop);
   const hotkeys = useSettings((s) => s.settings.hotkeys);
+  const lastProfileId = useSettings((s) => s.settings.lastProfileId);
+  const loadProfiles = useProfiles((s) => s.load);
   const compact = useSettings((s) => s.settings.ui.compact);
   const showLatency = useSettings((s) => s.settings.ui.showLatency);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [transcriptOpen, setTranscriptOpen] = useState(!compact);
+  const [startOpen, setStartOpen] = useState(false);
+
+  useEffect(() => {
+    void loadProfiles();
+  }, [loadProfiles]);
 
   useEffect(() => {
     if (!session) return undefined;
@@ -48,9 +59,13 @@ export default function Live() {
   const listening = audio?.listening ?? false;
 
   const start = async () => {
+    if (!session) {
+      // New session: profile + consent dialog (§11) before any audio is captured.
+      setStartOpen(true);
+      return;
+    }
     setBusy(true);
     try {
-      if (!session) await startSession(profile?.id ?? null);
       await startAudio();
     } catch (err) {
       toast({ kind: 'error', title: 'Could not start listening', message: String(err) });
@@ -75,6 +90,7 @@ export default function Live() {
 
   return (
     <div className="flex h-full flex-col">
+      {startOpen && <StartSessionDialog open onOpenChange={setStartOpen} initialProfileId={profile?.id ?? lastProfileId} />}
       <div className="flex shrink-0 items-center gap-1.5 px-3 pt-2">
         {listening ? (
           <Button size="sm" variant="secondary" onClick={() => void stop()} disabled={busy}>
@@ -90,6 +106,9 @@ export default function Live() {
             <Zap /> Answer now
           </Button>
         )}
+        <Button size="sm" variant="outline" onClick={() => void invoke('screenshot:solve', { region: true })} title={`Solve what's on screen (${prettyAccelerator(hotkeys.screenshotSolve)})`}>
+          <Camera /> {compact ? '' : 'Solve screen'}
+        </Button>
         <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
           {session && <span className="tabular-nums">{formatMs(elapsed)}</span>}
           {session ? (
@@ -142,12 +161,15 @@ export default function Live() {
                 ))}
               </div>
             )}
-            {visibleCards.length === 0 && !pending && (
+            {visibleCards.length === 0 && screenshots.length === 0 && !pending && (
               <div className="py-8 text-center text-xs text-muted-foreground">
                 Answers appear here as questions are detected. Press <Kbd>{prettyAccelerator(hotkeys.answerNow)}</Kbd> to answer the last 30 seconds.
               </div>
             )}
             <div className="space-y-2">
+              {screenshots.map((sh) => (
+                <ScreenshotCard key={sh.id} shot={sh} onDismiss={dismissScreenshot} />
+              ))}
               {visibleCards.map((c, i) => (
                 <AnswerCard key={c.id} card={c} showLatency={showLatency} collapsedDefault={i >= 2} compact={compact} onDismiss={dismissCard} />
               ))}
