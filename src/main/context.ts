@@ -5,6 +5,7 @@ import type { SecretStore } from './secrets';
 import type { SettingsStore } from './settings';
 import type { WindowManager } from "./windows";
 import type { SessionManager } from "./session/SessionManager";
+import type { AudioManager } from "./audio/AudioManager";
 
 /**
  * Shared service registry. Services added in later milestones are declared optional
@@ -18,6 +19,7 @@ export interface AppContext {
   windows: WindowManager;
   hotkeys: HotkeyManager;
   sessions: SessionManager;
+  audio: AudioManager;
   isDev: boolean;
   version: string;
 }

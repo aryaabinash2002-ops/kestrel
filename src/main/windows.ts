@@ -89,10 +89,26 @@ export class WindowManager {
 
   createCapture(): BrowserWindow {
     if (this.capture && !this.capture.isDestroyed()) return this.capture;
+    // Chromium only services getUserMedia/getDisplayMedia for documents that have been
+    // shown, so this window is briefly shown (1×1, transparent, inactive) while streams
+    // are acquired — see AudioManager.withCaptureVisible().
     const win = new BrowserWindow({
       show: false,
-      width: 320,
-      height: 200,
+      width: 1,
+      height: 1,
+      x: 0,
+      y: 0,
+      opacity: 0,
+      frame: false,
+      transparent: true,
+      focusable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
       title: 'Kestrel Audio Engine',
       webPreferences: {
         preload: join(__dirname, '../preload/capture.js'),

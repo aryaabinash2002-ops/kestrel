@@ -15,6 +15,7 @@ import { emit } from './ipc';
 import { bootServices } from "./services";
 import { attachSmokeTest } from "./smoke";
 import { SessionManager } from "./session/SessionManager";
+import { AudioManager } from "./audio/AudioManager";
 
 const log = logger.scope('main');
 
@@ -54,6 +55,7 @@ async function boot(): Promise<void> {
   const windows = new WindowManager(() => settings.get());
   const hotkeys = new HotkeyManager();
   const sessions = new SessionManager(db);
+  const audio = new AudioManager(() => windows.capture, () => settings.get());
 
   ctx = {
     paths,
@@ -63,6 +65,7 @@ async function boot(): Promise<void> {
     windows,
     hotkeys,
     sessions,
+    audio,
     isDev: is.dev,
     version: app.getVersion(),
   };
@@ -104,7 +107,7 @@ async function boot(): Promise<void> {
   await bootServices(ctx);
 
   windows.createCapture();
-  attachSmokeTest(windows.createPanel());
+  attachSmokeTest(windows.createPanel(), ctx);
 
   const failed = hotkeys.apply(settings.get().hotkeys);
   if (failed.length) {

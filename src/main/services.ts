@@ -1,6 +1,7 @@
 import type { AppContext } from './context';
 import { handle } from './ipc';
 import { registerSessionHandlers } from './handlers/session';
+import { registerAudioHandlers } from './handlers/audio';
 
 /**
  * Boots the feature services (audio, transcription, LLM, extension server, …)
@@ -8,15 +9,9 @@ import { registerSessionHandlers } from './handlers/session';
  */
 export async function bootServices(ctx: AppContext): Promise<void> {
   registerSessionHandlers(ctx);
+  registerAudioHandlers(ctx);
 
   // Placeholders replaced by real services in later milestones.
-  handle('audio:state', () => ({
-    listening: false,
-    me: { channel: 'ME', active: false, source: null, deviceLabel: null, error: null, warnings: [] },
-    them: { channel: 'THEM', active: false, source: null, deviceLabel: null, error: null, warnings: [] },
-    resolvedSystemMode: null,
-  }));
-  handle('audio:listDevices', () => ({ inputs: [], outputs: [] }));
   handle('transcript:state', () => []);
   handle('extension:state', () => ({
     status: 'off',

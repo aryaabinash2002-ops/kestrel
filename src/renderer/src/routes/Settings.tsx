@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react';
 import { Page } from '@renderer/components/Page';
@@ -114,8 +114,9 @@ export default function Settings() {
   const settings = useSettings((s) => s.settings);
   const update = useSettings((s) => s.update);
   const backend = useSettings((s) => s.secretBackend);
-  const [opacity, setOpacity] = useState(settings.ui.opacity);
-  useEffect(() => setOpacity(settings.ui.opacity), [settings.ui.opacity]);
+  const [opacityDraft, setOpacityDraft] = useState<number | null>(null);
+  const opacity = opacityDraft ?? settings.ui.opacity;
+  const setOpacity = setOpacityDraft;
 
   return (
     <Page title="Settings" scroll={false}>
@@ -288,7 +289,9 @@ export default function Settings() {
                     onValueChange={([v]) => {
                       if (v !== undefined) setOpacity(v);
                     }}
-                    onValueCommit={([v]) => v !== undefined && void update({ ui: { opacity: v } })}
+                    onValueCommit={([v]) => {
+                      if (v !== undefined) void update({ ui: { opacity: v } }).then(() => setOpacityDraft(null));
+                    }}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
