@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Camera, ChevronDown, ChevronUp, Eraser, Mic, Square, Zap } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Kbd } from '@renderer/components/ui/kbd';
 import { ChannelStrip } from '@renderer/components/ChannelStrip';
 import { TranscriptView } from '@renderer/components/TranscriptView';
 import { TranscriptionStatus } from '@renderer/components/TranscriptionStatus';
+import { AudioHints } from '@renderer/components/AudioHints';
 import { AnswerCard } from '@renderer/components/AnswerCard';
 import { ScreenshotCard } from '@renderer/components/ScreenshotCard';
 import { ChatBox } from '@renderer/components/ChatBox';
@@ -23,6 +24,7 @@ export default function Live() {
   const audio = useAudio((s) => s.state);
   const levels = useAudio((s) => s.levels);
   const transcription = useAudio((s) => s.transcription);
+  const extension = useAudio((s) => s.extension);
   const startAudio = useAudio((s) => s.start);
   const stopAudio = useAudio((s) => s.stop);
   const session = useSession((s) => s.state.session);
@@ -45,7 +47,8 @@ export default function Live() {
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [transcriptOpen, setTranscriptOpen] = useState(!compact);
-  const [startOpen, setStartOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [startOpen, setStartOpen] = useState(!!params.get('start'));
 
   useEffect(() => {
     void loadProfiles();
@@ -91,7 +94,16 @@ export default function Live() {
 
   return (
     <div className="flex h-full flex-col">
-      {startOpen && <StartSessionDialog open onOpenChange={setStartOpen} initialProfileId={profile?.id ?? lastProfileId} />}
+      {startOpen && (
+        <StartSessionDialog
+          open
+          onOpenChange={(o) => {
+            setStartOpen(o);
+            if (!o && params.get('start')) setParams({});
+          }}
+          initialProfileId={profile?.id ?? lastProfileId}
+        />
+      )}
       <div className="flex shrink-0 items-center gap-1.5 px-3 pt-2">
         {listening ? (
           <Button size="sm" variant="secondary" onClick={() => void stop()} disabled={busy}>
@@ -126,6 +138,7 @@ export default function Live() {
         <ChannelStrip status={audio?.them ?? null} level={levels.THEM} compact />
       </div>
       <TranscriptionStatus states={transcription} listening={listening} />
+      <AudioHints audio={audio} extension={extension} />
 
       {!session ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-xs text-muted-foreground">

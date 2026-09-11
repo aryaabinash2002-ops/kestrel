@@ -39,6 +39,12 @@ export function Diagnostics() {
             <Stat label="Restarts" value={data ? Math.round(data.speculativeRestartRate * 100) : null} unit="%" />
           </div>
           <LatencyChart samples={data?.latency ?? []} />
+          {data?.cache && (
+            <p className="text-[11px] text-muted-foreground">
+              Prompt cache: {data.cache.cached ? <span className="text-success">active</span> : <span className="text-warning">inactive</span>} — static prefix ≈ {data.cache.prefixTokens.toLocaleString()} tokens, minimum {data.cache.cacheMinimum.toLocaleString()} for the live model.
+              {!data.cache.cached && ' A longer résumé/story bank or the Sonnet model enables caching.'}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={refresh}>
               Refresh

@@ -1,7 +1,7 @@
 {
   "name": "kestrel",
   "version": "0.1.0",
-  "description": "Kestrel — real-time AI interview & call copilot",
+  "description": "Kestrel \u2014 real-time AI interview & call copilot",
   "main": "./out/main/index.js",
   "author": "Kestrel",
   "license": "MIT",
@@ -20,10 +20,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:ext": "node scripts/build-extension.mjs",
-    "package:mac": "electron-vite build && electron-builder --mac",
-    "package:win": "electron-vite build && electron-builder --win",
-    "package:all": "electron-vite build && electron-builder --mac --win",
-    "postinstall": "electron-builder install-app-deps"
+    "package:mac": "npm run prepackage && electron-vite build && electron-builder --mac",
+    "package:win": "npm run prepackage && electron-vite build && electron-builder --win",
+    "package:all": "npm run prepackage && electron-vite build && electron-builder --mac --win",
+    "postinstall": "electron-builder install-app-deps",
+    "build:icons": "node scripts/make-icons.mjs build && node -e \"import('./scripts/make-icons.mjs').then(m=>require('fs').writeFileSync('build/icon.png', m.iconPng(1024)))\"",
+    "prepackage": "npm run build:ext",
+    "package:dir": "npm run prepackage && electron-vite build && electron-builder --dir"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

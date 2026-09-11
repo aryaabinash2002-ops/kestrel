@@ -1,5 +1,5 @@
 import type { AppContext } from '../context';
-import { handle } from '../ipc';
+import { emit, handle } from '../ipc';
 
 export function registerAudioHandlers(ctx: AppContext): void {
   const audio = ctx.audio;
@@ -18,7 +18,18 @@ export function registerAudioHandlers(ctx: AppContext): void {
   handle('audio:test', (_e, channel) => audio.test(channel));
 
   ctx.hotkeys.on('toggleListening', () => {
-    void (audio.state().listening ? audio.stop().then(() => ctx.sessions.setListening(false)) : audio.start().then((s) => ctx.sessions.setListening(s.listening)));
+    if (audio.state().listening) {
+      void audio.stop().then(() => ctx.sessions.setListening(false));
+      return;
+    }
+    if (!ctx.sessions.session) {
+      // No session yet: bring up the panel with the start dialog (profile + consent) instead of
+      // silently capturing audio.
+      ctx.windows.showPanel();
+      emit('navigate', { to: '/live?start=1' });
+      return;
+    }
+    void audio.start().then((s) => ctx.sessions.setListening(s.listening));
   });
   ctx.hotkeys.on('togglePanel', () => ctx.windows.togglePanel());
 

@@ -28,6 +28,13 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
       notes: 'Emphasise ownership and mentoring.',
     });
   }
+  if (process.env['KESTREL_SMOKE_SETTINGS']) {
+    try {
+      ctx.settings.set(JSON.parse(process.env['KESTREL_SMOKE_SETTINGS']));
+    } catch (err) {
+      log.warn('bad KESTREL_SMOKE_SETTINGS', err);
+    }
+  }
   const errors: string[] = [];
   panel.webContents.on('console-message', (event) => {
     if (event.level === 'error' || event.level === 'warning')

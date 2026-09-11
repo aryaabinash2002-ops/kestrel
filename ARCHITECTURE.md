@@ -81,6 +81,12 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * `screenshot/ScreenshotService.ts`: hides the Kestrel panel for ~120 ms, captures the display under the cursor with `desktopCapturer.getSources` at native resolution, then (region mode) opens a transparent always-on-top overlay window per display (`src/renderer/region/`, preload `region.ts`) showing the frozen frame: drag = region, click/Enter = whole screen, Esc = cancel. The crop is saved to `data/files/screenshots/<id>.png`, inserted into `screenshots`, downscaled to ≤ 1600 px for the model, and sent as a base64 image block to the strong model (`models.heavy`, adaptive thinking, effort medium) with the `screenshot_solve` template (problem → approach → pseudocode → complexity → edge cases → code in the preferred language). The last 90 s of THEM speech is attached as context. Output streams via `screenshot:event` and renders with the dependency-free `Markdown` component (code blocks get a copy button).
 * Hotkey `screenshotSolve` (default ⌘⇧S) opens region selection; the Live screen's *Solve screen* button does the same.
 
+## Follow-up chat (M9) and polish (M12)
+
+* `AnswerEngine.chat(text)` cancels any in-flight answer and streams a free-form reply (≤ 80 words, first line = the useful sentence) built from the same cached system prefix, the recent transcript, the last three suggested answers and the user's request. The `ChatBox` sits under the transcript on the Live screen with quick chips (Shorter / With numbers / Ask them back / Simplify); smalltalk chips also route here.
+* Error states: transcription socket status banner (connecting / reconnecting with attempt count / error), `AudioHints` (extension paired-but-not-capturing, extension missing, no signal from the other party with the device to select, Bluetooth call-mode headset), key problems as sticky toasts plus an error card, an *Offline* badge in the header driven by the renderer's online/offline events, and uncaught main-process errors logged (never crash the panel).
+* Themes (dark / light / system) are CSS-variable palettes on `:root` / `.dark`; opacity, always-on-top, compact layout (narrower window, denser cards, transcript collapsed by default) and font size are applied live from settings. Global hotkeys: start/stop listening (opens the start dialog when no session exists), answer now, screenshot solve, toggle panel, clear cards.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

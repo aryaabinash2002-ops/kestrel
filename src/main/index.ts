@@ -162,6 +162,13 @@ async function boot(): Promise<void> {
   });
 }
 
+process.on('uncaughtException', (err) => {
+  log.error('uncaught exception', err);
+});
+process.on('unhandledRejection', (reason) => {
+  log.error('unhandled rejection', reason);
+});
+
 app.whenReady().then(boot).catch((err) => {
   log.error('boot failed', err);
   console.error(err);
