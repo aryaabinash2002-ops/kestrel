@@ -58,6 +58,10 @@ export interface Settings {
     compact: boolean;
     alwaysOnTop: boolean;
     showLatency: boolean;
+    /** See-through panel: transparent window with a frosted, translucent background (text stays opaque). */
+    glass: boolean;
+    /** Background opacity in glass mode (0.2–0.95). */
+    glassAlpha: number;
   };
   extensionPort: number;
   /** Start a session + listening automatically when the extension reports a joined Meet call. */
@@ -110,6 +114,8 @@ export const DEFAULT_SETTINGS: Settings = {
     compact: false,
     alwaysOnTop: true,
     showLatency: false,
+    glass: true,
+    glassAlpha: 0.7,
   },
   extensionPort: 47600,
   autoStartOnMeetJoin: true,

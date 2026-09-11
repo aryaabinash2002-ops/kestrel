@@ -23,8 +23,9 @@ npm run build && npm run preview
 1. First run: accept the consent notice, paste your API keys, grant the microphone and (macOS) System Audio Recording permissions.
 2. **Setup → New**: create a profile (role, company, type, résumé PDF/DOCX, job description, 5–10 STAR stories, notes).
 3. **Setup → Test with Meet** to confirm the other party's audio is captured and transcribed.
-4. On a call: **Live → Start listening** (or `⌘⇧L` / `Ctrl+Shift+L`). Questions are answered automatically; `⌘⇧A` answers the last 30 seconds on demand; `⌘⇧S` solves what is on screen; the chat box at the bottom takes follow-ups like "shorter" or "what should I ask them back?".
-5. After the call, **Review** generates a summary, the questions asked, weak spots, a follow-up email and action items, and exports Markdown/PDF.
+4. **See-through panel** (on by default): the panel window is transparent with a frosted background so the interviewer's page stays visible behind it; text stays fully opaque. Toggle it with the blend icon in the header, or set the background opacity in Settings → Look.
+5. On a call: **Live → Start listening** (or `⌘⇧L` / `Ctrl+Shift+L`). Questions are answered automatically; `⌘⇧A` answers the last 30 seconds on demand; `⌘⇧S` solves what is on screen; the chat box at the bottom takes follow-ups like "shorter" or "what should I ask them back?".
+6. After the call, **Review** generates a summary, the questions asked, weak spots, a follow-up email and action items, and exports Markdown/PDF.
 
 ### macOS permissions
 

@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Bird, FileText, GraduationCap, Radio, Settings2, Sparkles, WifiOff } from 'lucide-react';
+import {
+  Bird,
+  Blend,
+  FileText,
+  GraduationCap,
+  Radio,
+  Settings2,
+  Sparkles,
+  WifiOff,
+} from 'lucide-react';
+import { useSettings } from '@renderer/store/settings';
 import { cn } from '@renderer/lib/utils';
 import { isMac } from '@renderer/lib/ipc';
 import { useSession } from '@renderer/store/session';
@@ -34,6 +44,8 @@ export function Shell() {
   const listening = useAudio((s) => s.state?.listening ?? false);
   const session = useSession((s) => s.state.session);
   const online = useOnline();
+  const glass = useSettings((s) => s.settings.ui.glass);
+  const update = useSettings((s) => s.update);
   return (
     <div className="flex h-full flex-col bg-background">
       <header
@@ -54,6 +66,20 @@ export function Shell() {
             </span>
           )}
           <ListeningIndicator listening={listening} active={!!session} />
+          <button
+            className={cn(
+              'no-drag rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+              glass && 'text-primary',
+            )}
+            title={
+              glass
+                ? 'See-through panel on — click for a solid panel'
+                : 'Make the panel see-through'
+            }
+            onClick={() => void update({ ui: { glass: !glass } })}
+          >
+            <Blend className="size-4" />
+          </button>
         </div>
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">

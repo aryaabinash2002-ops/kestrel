@@ -90,6 +90,40 @@
   color-scheme: dark;
 }
 
+/* See-through panel: the window is transparent; these alphas decide how much of the
+   interviewer's page shows through. Text keeps full contrast. */
+:root {
+  --panel-alpha: 1;
+}
+html.glass {
+  --background: oklch(0.985 0.002 260 / var(--panel-alpha));
+  --card: oklch(1 0 0 / 0.72);
+  --popover: oklch(1 0 0 / 0.94);
+  --secondary: oklch(0.94 0.005 260 / 0.7);
+  --muted: oklch(0.95 0.005 260 / 0.6);
+  --accent: oklch(0.93 0.01 260 / 0.7);
+  --border: oklch(0.85 0.005 260 / 0.6);
+  --input: oklch(0.9 0.005 260 / 0.7);
+}
+html.glass.dark {
+  --background: oklch(0.17 0.012 260 / var(--panel-alpha));
+  --card: oklch(0.21 0.014 260 / 0.72);
+  --popover: oklch(0.22 0.014 260 / 0.94);
+  --secondary: oklch(0.26 0.014 260 / 0.7);
+  --muted: oklch(0.25 0.012 260 / 0.6);
+  --accent: oklch(0.28 0.016 260 / 0.7);
+  --border: oklch(0.36 0.014 260 / 0.55);
+  --input: oklch(0.3 0.014 260 / 0.7);
+}
+html.glass body {
+  background: transparent;
+}
+html.glass #root {
+  background: var(--background);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 * {
   border-color: var(--border);
 }

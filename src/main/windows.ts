@@ -45,7 +45,17 @@ export class WindowManager {
       y: 48,
       show: false,
       title: 'Kestrel',
-      backgroundColor: s.ui.theme === 'light' ? '#f7f7f8' : '#0b0d12',
+      // Always created transparent; the renderer decides how see-through the background is
+      // (settings.ui.glass / glassAlpha) so toggling never needs a window recreation.
+      transparent: true,
+      backgroundColor: '#00000000',
+      hasShadow: true,
+      ...(process.platform === 'darwin' && s.ui.glass
+        ? { vibrancy: 'hud' as const, visualEffectState: 'active' as const }
+        : {}),
+      ...(process.platform === 'win32' && s.ui.glass
+        ? { backgroundMaterial: 'acrylic' as const }
+        : {}),
       titleBarStyle: 'hidden',
       trafficLightPosition: { x: 14, y: 14 },
       ...(process.platform !== 'darwin'
@@ -155,6 +165,17 @@ export class WindowManager {
     if (!p || p.isDestroyed()) return;
     p.setOpacity(ui.opacity);
     p.setAlwaysOnTop(ui.alwaysOnTop, 'floating');
+    this.applyGlass(p, ui.glass);
+  }
+
+  /** Native blur behind the translucent panel (macOS vibrancy / Windows 11 acrylic). */
+  private applyGlass(win: BrowserWindow, glass: boolean): void {
+    try {
+      if (process.platform === 'darwin') win.setVibrancy(glass ? 'hud' : null);
+      else if (process.platform === 'win32') win.setBackgroundMaterial(glass ? 'acrylic' : 'none');
+    } catch (err) {
+      log.debug('glass effect unavailable', err);
+    }
   }
 
   setCompact(compact: boolean): void {

@@ -40,12 +40,17 @@ export const useSettings = create<SettingsState>((set) => ({
 
 on('settings:changed', (settings) => useSettings.setState({ settings }));
 
-export function applyTheme(theme: Settings['ui']['theme'], fontSize: number): void {
+export function applyTheme(ui: Settings['ui']): void {
   const root = document.documentElement;
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const dark = theme === 'dark' || (theme === 'system' && prefersDark);
+  const dark = ui.theme === 'dark' || (ui.theme === 'system' && prefersDark);
   root.classList.toggle('dark', dark);
-  root.style.setProperty('--app-font-size', `${fontSize}px`);
+  root.classList.toggle('glass', ui.glass);
+  root.style.setProperty('--app-font-size', `${ui.fontSize}px`);
+  root.style.setProperty(
+    '--panel-alpha',
+    String(ui.glass ? Math.min(0.95, Math.max(0.2, ui.glassAlpha)) : 1),
+  );
 }
 
-useSettings.subscribe((s) => applyTheme(s.settings.ui.theme, s.settings.ui.fontSize));
+useSettings.subscribe((s) => applyTheme(s.settings.ui));

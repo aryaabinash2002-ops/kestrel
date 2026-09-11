@@ -135,6 +135,8 @@ export default function Settings() {
   const update = useSettings((s) => s.update);
   const backend = useSettings((s) => s.secretBackend);
   const [opacityDraft, setOpacityDraft] = useState<number | null>(null);
+  const [glassDraft, setGlassDraft] = useState<number | null>(null);
+  const glassAlpha = glassDraft ?? settings.ui.glassAlpha;
   const opacity = opacityDraft ?? settings.ui.opacity;
   const setOpacity = setOpacityDraft;
 
@@ -350,6 +352,47 @@ export default function Settings() {
                 <CardTitle>Panel</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <Row
+                  label="See-through panel"
+                  hint="Transparent window with a frosted background so the interviewer's page stays visible. Text stays fully readable."
+                >
+                  <Switch
+                    checked={settings.ui.glass}
+                    onCheckedChange={(v) => void update({ ui: { glass: v } })}
+                  />
+                </Row>
+
+                {settings.ui.glass && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between">
+                      <Label>Background opacity</Label>
+
+                      <span className="text-xs text-muted-foreground">
+                        {Math.round(glassAlpha * 100)}%
+                      </span>
+                    </div>
+
+                    <Slider
+                      min={0.2}
+
+                      max={0.95}
+
+                      step={0.05}
+
+                      value={[glassAlpha]}
+
+                      onValueChange={([v]) => {
+                        if (v !== undefined) setGlassDraft(v);
+                      }}
+
+                      onValueCommit={([v]) => {
+                        if (v !== undefined)
+                          void update({ ui: { glassAlpha: v } }).then(() => setGlassDraft(null));
+                      }}
+                    />
+                  </div>
+                )}
+
                 <Row label="Always on top">
                   <Switch
                     checked={settings.ui.alwaysOnTop}
@@ -373,7 +416,7 @@ export default function Settings() {
                 </Row>
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <Label>Opacity</Label>
+                    <Label>Whole-window opacity (also fades text)</Label>
                     <span className="text-xs text-muted-foreground">
                       {Math.round(opacity * 100)}%
                     </span>
