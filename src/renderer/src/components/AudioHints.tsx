@@ -24,7 +24,7 @@ export function AudioHints({
   } else if (them.active && them.warnings.includes('no-signal')) {
     hints.push({
       icon: <VolumeX className="size-3.5" />,
-      text: `No audio from the other party yet. In your call app's audio settings, set the Speaker to the device Kestrel captures${them.deviceLabel ? ` (${them.deviceLabel})` : ''}.`,
+      text: `No audio from the other party yet. Kestrel hears exactly what comes out of this Mac's speakers, so make sure you can hear them here, that the call tab is not muted, and that the call app's Speaker is the device Kestrel captures${them.deviceLabel ? ` (${them.deviceLabel})` : ''}. Testing with a phone in the same room? Meet mutes it to prevent echo — use headphones on the phone or the Meet extension instead.`,
     });
   }
   if (
