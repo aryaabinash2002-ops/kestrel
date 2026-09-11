@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   stories TEXT NOT NULL DEFAULT '[]',
   notes TEXT NOT NULL DEFAULT '',
   user_name TEXT NOT NULL DEFAULT '',
+  knowledge_text TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -112,6 +113,7 @@ interface ProfileRow {
   stories: string;
   notes: string;
   user_name: string;
+  knowledge_text: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -193,7 +195,19 @@ export class SessionDB {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
     this.db.exec(SCHEMA);
+    this.migrate();
     log.info('opened', file);
+  }
+
+  /** Additive migrations for databases created by older builds. */
+  private migrate(): void {
+    const cols = (this.db.prepare('PRAGMA table_info(profiles)').all() as { name: string }[]).map(
+      (c) => c.name,
+    );
+    if (!cols.includes('knowledge_text')) {
+      this.db.exec("ALTER TABLE profiles ADD COLUMN knowledge_text TEXT NOT NULL DEFAULT ''");
+      log.info('migrated: profiles.knowledge_text');
+    }
   }
 
   close(): void {
@@ -219,6 +233,7 @@ export class SessionDB {
       jdText: r.jd_text,
       stories: safeJson<Story[]>(r.stories, []),
       notes: r.notes,
+      knowledgeText: r.knowledge_text ?? '',
       userName: r.user_name,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
@@ -253,17 +268,18 @@ export class SessionDB {
       jdText: p.jdText ?? existing?.jdText ?? '',
       stories: p.stories ?? existing?.stories ?? [],
       notes: p.notes ?? existing?.notes ?? '',
+      knowledgeText: p.knowledgeText ?? existing?.knowledgeText ?? '',
       userName: p.userName ?? existing?.userName ?? '',
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
     this.db
       .prepare(
-        `INSERT INTO profiles (id,name,role,company,type,language,length,tone,resume_text,jd_text,stories,notes,user_name,created_at,updated_at)
-         VALUES (@id,@name,@role,@company,@type,@language,@length,@tone,@resume_text,@jd_text,@stories,@notes,@user_name,@created_at,@updated_at)
+        `INSERT INTO profiles (id,name,role,company,type,language,length,tone,resume_text,jd_text,stories,notes,user_name,knowledge_text,created_at,updated_at)
+         VALUES (@id,@name,@role,@company,@type,@language,@length,@tone,@resume_text,@jd_text,@stories,@notes,@user_name,@knowledge_text,@created_at,@updated_at)
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role, company=excluded.company, type=excluded.type,
            language=excluded.language, length=excluded.length, tone=excluded.tone, resume_text=excluded.resume_text,
-           jd_text=excluded.jd_text, stories=excluded.stories, notes=excluded.notes, user_name=excluded.user_name, updated_at=excluded.updated_at`,
+           jd_text=excluded.jd_text, stories=excluded.stories, notes=excluded.notes, user_name=excluded.user_name, knowledge_text=excluded.knowledge_text, updated_at=excluded.updated_at`,
       )
       .run({
         id: merged.id,
@@ -279,6 +295,7 @@ export class SessionDB {
         stories: JSON.stringify(merged.stories),
         notes: merged.notes,
         user_name: merged.userName,
+        knowledge_text: merged.knowledgeText,
         created_at: merged.createdAt,
         updated_at: merged.updatedAt,
       });

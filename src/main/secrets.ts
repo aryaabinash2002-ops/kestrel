@@ -79,7 +79,9 @@ export class SecretStore {
 
   /** Read all keys once at startup so the first LLM/STT request never waits on the keychain. */
   async preload(): Promise<void> {
-    await Promise.all((['anthropic', 'deepgram', 'assemblyai'] as SecretKey[]).map((k) => this.get(k)));
+    await Promise.all(
+      (['anthropic', 'deepgram', 'assemblyai'] as SecretKey[]).map((k) => this.get(k)),
+    );
   }
 
   async set(key: SecretKey, value: string): Promise<void> {

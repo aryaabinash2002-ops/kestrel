@@ -126,6 +126,23 @@ export class PracticeService extends EventEmitter {
         label: STATIC_BANKS.system_design.label,
         description: STATIC_BANKS.system_design.description,
       },
+      {
+        id: 'web',
+        label: STATIC_BANKS.web.label,
+        description: STATIC_BANKS.web.description,
+      },
+      {
+        id: 'puzzle',
+        label: STATIC_BANKS.puzzle.label,
+        description: STATIC_BANKS.puzzle.description,
+      },
+      {
+        id: 'product',
+        label: 'Product knowledge (from your knowledge base)',
+        description: profile?.knowledgeText?.trim()
+          ? 'Questions a hiring manager or customer would ask about the product, generated from the knowledge base in your profile.'
+          : 'Needs a profile with a knowledge base (Setup → profile → Product / domain knowledge).',
+      },
     ];
   }
 
@@ -275,8 +292,8 @@ export class PracticeService extends EventEmitter {
     count: number,
     profile: Profile | null,
   ): Promise<BankQuestion[]> {
-    if (setId === 'role') {
-      const generated = await this.generateRoleQuestions(count, profile);
+    if (setId === 'role' || setId === 'product') {
+      const generated = await this.generateRoleQuestions(count, profile, setId);
       if (generated.length) return generated;
       emit('toast', {
         kind: 'info',
@@ -286,15 +303,19 @@ export class PracticeService extends EventEmitter {
       });
       return pickStatic('behavioral', count);
     }
-    if (setId in STATIC_BANKS) return pickStatic(setId as Exclude<PracticeSetId, 'role'>, count);
+    if (setId in STATIC_BANKS)
+      return pickStatic(setId as Exclude<PracticeSetId, 'role' | 'product'>, count);
     return pickStatic('behavioral', count);
   }
 
   private async generateRoleQuestions(
     count: number,
     profile: Profile | null,
+    kind: 'role' | 'product' = 'role',
   ): Promise<BankQuestion[]> {
-    if (!profile?.jdText?.trim()) return [];
+    if (!profile) return [];
+    if (kind === 'role' && !profile.jdText?.trim()) return [];
+    if (kind === 'product' && !profile.knowledgeText?.trim()) return [];
     const s = this.deps.getSettings();
     const system = renderTemplate(
       s.prompts.practice_interviewer ?? DEFAULT_PROMPTS.practice_interviewer,
@@ -304,11 +325,15 @@ export class PracticeService extends EventEmitter {
         interview_type: profile.type.replace('_', ' '),
         count: String(count),
         category:
-          profile.type === 'technical' || profile.type === 'system_design'
-            ? 'technical and role-specific'
-            : 'role-specific behavioral and situational',
-        jd_text: profile.jdText,
+          kind === 'product'
+            ? 'product knowledge'
+            : profile.type === 'technical' || profile.type === 'system_design'
+              ? 'technical and role-specific'
+              : 'role-specific behavioral and situational',
+        jd_text: profile.jdText || '(no job description)',
         resume_text: profile.resumeText || '(no résumé)',
+        knowledge: profile.knowledgeText ? profile.knowledgeText.slice(0, 60_000) : '',
+        has_knowledge: !!profile.knowledgeText?.trim(),
       },
     );
     try {
@@ -323,9 +348,7 @@ export class PracticeService extends EventEmitter {
       const qs = Array.isArray(out.questions)
         ? out.questions.filter((q): q is string => typeof q === 'string' && q.trim().length > 8)
         : [];
-      return qs
-        .slice(0, count)
-        .map((question) => ({ question: question.trim(), category: 'role' }));
+      return qs.slice(0, count).map((question) => ({ question: question.trim(), category: kind }));
     } catch (err) {
       log.warn('role question generation failed', err);
       return [];

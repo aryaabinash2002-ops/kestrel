@@ -25,6 +25,8 @@ export const CLASSIFIER_SCHEMA = {
         'smalltalk',
         'factual',
         'sales',
+        'puzzle',
+        'product',
         'other',
       ],
     },

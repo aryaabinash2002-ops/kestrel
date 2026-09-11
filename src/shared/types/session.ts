@@ -23,6 +23,8 @@ export interface Profile {
   jdText: string;
   stories: Story[];
   notes: string;
+  /** Product / domain knowledge (help-centre articles, docs) the answers may quote. */
+  knowledgeText: string;
   userName: string;
   createdAt: number;
   updatedAt: number;
@@ -70,6 +72,8 @@ export type QuestionType =
   | 'smalltalk'
   | 'factual'
   | 'sales'
+  | 'puzzle'
+  | 'product'
   | 'other';
 
 export interface AnswerLatency {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { FileUp, Loader2 } from 'lucide-react';
+import { FileUp, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Textarea } from '@renderer/components/ui/textarea';
 import { Label } from '@renderer/components/ui/label';
@@ -13,15 +13,38 @@ export function DocumentField({
   value,
   onChange,
   rows = 6,
+  allowUrl = false,
 }: {
   label: string;
   hint?: string;
   value: string;
   onChange: (v: string) => void;
   rows?: number;
+  /** Show an "Import from URL" box (help-centre collections are crawled). */
+  allowUrl?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState('');
+
+  const importFromUrl = async () => {
+    if (!url.trim()) return;
+    setBusy(true);
+    try {
+      const doc = await invoke('profiles:importUrl', url.trim());
+      onChange(value.trim() ? `${value.trim()}\n\n---\n\n${doc.text}` : doc.text);
+      setUrl('');
+      toast({
+        kind: 'success',
+        title: `Imported ${doc.filename}`,
+        message: `${doc.chars.toLocaleString()} characters`,
+      });
+    } catch (err) {
+      toast({ kind: 'error', title: 'Could not import that URL', message: String(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const pick = async () => {
     setBusy(true);
@@ -99,6 +122,27 @@ export function DocumentField({
           />
         </div>
       </div>
+      {allowUrl && (
+        <form
+          className="flex items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void importFromUrl();
+          }}
+        >
+          <Globe className="size-3.5 shrink-0 text-muted-foreground" />
+          <input
+            className="no-drag selectable h-8 flex-1 rounded-md border border-input bg-background/60 px-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            placeholder="Import from URL — a help-centre collection pulls in every article"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            disabled={busy}
+          />
+          <Button size="xs" type="submit" variant="outline" disabled={busy || !url.trim()}>
+            {busy ? <Loader2 className="animate-spin" /> : null} Import
+          </Button>
+        </form>
+      )}
       <Textarea
         rows={rows}
         value={value}

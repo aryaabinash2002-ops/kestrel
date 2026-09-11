@@ -28,6 +28,7 @@ export interface ContextProfile {
   jdText: string;
   stories: string;
   notes: string;
+  knowledge: string;
 }
 
 export interface BuiltPrompt {
@@ -62,6 +63,7 @@ export function profileToContext(
       ? p.stories.map((s) => `### ${s.title}\n${s.text}`).join('\n\n')
       : '(none)',
     notes: p?.notes || '(none)',
+    knowledge: p?.knowledgeText?.trim() ? p.knowledgeText.slice(0, 90_000) : '(none)',
   };
 }
 
@@ -85,7 +87,10 @@ export function buildSystemPrefix(template: string, ctx: ContextProfile): string
     jd_text: ctx.jdText,
     stories: ctx.stories,
     notes: ctx.notes,
-    behavioral: ctx.type === 'behavioral' || ctx.type === 'general',
+    knowledge_base: ctx.knowledge,
+    has_knowledge: ctx.knowledge !== '(none)',
+    // Experience questions come up in every interview type except pure sales calls.
+    behavioral: ctx.type !== 'sales',
     technical: ctx.type === 'technical' || ctx.type === 'system_design',
     sales: ctx.type === 'sales',
   });

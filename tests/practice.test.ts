@@ -127,10 +127,18 @@ describe('question bank', () => {
 });
 
 describe('PracticeService', () => {
-  it('lists the four question sets', async () => {
+  it('lists the question sets', async () => {
     const { svc } = harness();
     const sets = await svc.sets(null);
-    expect(sets.map((s) => s.id)).toEqual(['behavioral', 'role', 'coding', 'system_design']);
+    expect(sets.map((s) => s.id)).toEqual([
+      'behavioral',
+      'role',
+      'coding',
+      'system_design',
+      'web',
+      'puzzle',
+      'product',
+    ]);
     expect(sets[1]!.description).toMatch(/job description/i);
   });
 

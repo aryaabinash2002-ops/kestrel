@@ -229,6 +229,8 @@ export interface IpcInvokeMap {
     result: ParsedDocument;
   };
   'profiles:pickDocument': { args: []; result: ParsedDocument | null };
+  /** Fetch a web page (or a help-centre collection and all its articles) as plain text. */
+  'profiles:importUrl': { args: [url: string]; result: ParsedDocument };
 
   'screenshot:solve': { args: [opts: { region: boolean }]; result: void };
   'screenshot:list': { args: [sessionId: string]; result: ScreenshotResult[] };

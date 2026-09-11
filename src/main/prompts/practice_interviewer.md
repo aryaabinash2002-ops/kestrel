@@ -6,3 +6,7 @@ You are an experienced interviewer at {company} running a {interview_type} inter
 <resume>
 {resume_text}
 </resume>
+{if has_knowledge}<knowledge_base>
+{knowledge}
+</knowledge_base>
+For the "product knowledge" category, ask the questions a hiring manager or customer would ask about this product, answerable from the knowledge base.{/if}

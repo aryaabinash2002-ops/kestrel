@@ -112,6 +112,7 @@ export default function Setup() {
                     <span className="flex items-center gap-1">
                       <FileText className="size-3" /> {p.resumeText ? 'résumé' : 'no résumé'} ·{' '}
                       {p.jdText ? 'JD' : 'no JD'} · {p.stories.length} stories
+                      {p.knowledgeText ? ' · knowledge base' : ''}
                     </span>
                   </div>
                 </div>

@@ -154,6 +154,14 @@ export function ProfileForm({
             rows={5}
             hint="Paste the JD (or import). Used to tailor answers and generate practice questions."
           />
+          <DocumentField
+            label="Product / domain knowledge"
+            value={d.knowledgeText}
+            onChange={(v) => set('knowledgeText', v)}
+            rows={5}
+            allowUrl
+            hint="Docs, help-centre articles or product notes the interviewer may ask about. Paste, import a PDF/DOCX, or import a URL (a help-centre collection pulls in all its articles)."
+          />
           <StoryBank stories={d.stories} onChange={(s) => set('stories', s)} />
           <div className="space-y-1">
             <Label>Notes</Label>
@@ -209,6 +217,7 @@ function toDraft(
     jdText: p?.jdText ?? '',
     stories: p?.stories ?? [],
     notes: p?.notes ?? '',
+    knowledgeText: p?.knowledgeText ?? '',
     userName: p?.userName ?? '',
   };
 }

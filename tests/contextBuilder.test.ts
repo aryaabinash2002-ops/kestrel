@@ -27,6 +27,8 @@ const profile: Profile = {
     },
   ],
   notes: 'Mention the Stripe migration.',
+  knowledgeText:
+    'Loop bundles: a Preset fixed bundle has fixed contents; Build-your-own lets customers pick items.',
   userName: 'Jane',
   createdAt: 0,
   updatedAt: 0,
@@ -71,13 +73,16 @@ describe('prompt rendering', () => {
       question: 'Tell me about a challenge',
     });
     const sys = built.system[0]!.text;
-    expect(sys).toContain('helping Jane during a behavioral conversation');
+    expect(sys).toContain('answers to Jane during a live behavioral conversation');
     expect(sys).toContain('Senior Software Engineer at Acme');
-    expect(sys).toContain('Use STAR');
-    expect(sys).not.toContain('Give the core concept first');
+    expect(sys).toContain('tell it as a short story');
+    expect(sys).not.toContain('Technical: give the core idea');
+    expect(sys).toContain('Puzzles / brain teasers');
     expect(sys).toContain('Led billing migration saving $1.2M');
     expect(sys).toContain('### Billing migration');
     expect(sys).toContain('Mention the Stripe migration.');
+    expect(sys).toContain('Preset fixed bundle has fixed contents');
+    expect(sys).toContain('sound like a real person');
     expect(sys).not.toMatch(/\{[a-z_]+\}/); // no unfilled placeholders
     expect(built.user).toContain('Question: Tell me about a challenge');
   });

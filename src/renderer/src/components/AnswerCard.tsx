@@ -12,6 +12,8 @@ const TYPE_LABEL: Record<string, string> = {
   smalltalk: 'Smalltalk',
   factual: 'Factual',
   sales: 'Sales',
+  puzzle: 'Puzzle',
+  product: 'Product',
   other: 'Question',
 };
 

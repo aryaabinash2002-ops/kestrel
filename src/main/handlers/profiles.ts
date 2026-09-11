@@ -4,10 +4,12 @@ import { basename, join } from 'node:path';
 import type { AppContext } from '../context';
 import { handle } from '../ipc';
 import { parseDocument } from '../docs/parseResume';
+import { importUrl } from '../docs/importUrl';
 import { uid } from '@shared/utils';
 
 export function registerProfileHandlers(ctx: AppContext): void {
   handle('profiles:parseDocument', (_e, source) => parseDocument(source));
+  handle('profiles:importUrl', (_e, url) => importUrl(url));
   handle('profiles:pickDocument', async () => {
     const res = await dialog.showOpenDialog({
       title: 'Choose a résumé or job description',

@@ -1,6 +1,7 @@
 You are reviewing the transcript of a {interview_type} conversation that {user_name} (labelled ME) had for the role of {role} at {company}. The other party is labelled THEM. AI-suggested answers shown to the user during the call are labelled AI.
 
 Produce a candid post-session review as JSON with these fields:
+
 - summary: 4–7 sentences describing how the conversation went, in {language}.
 - questions: every question THEM asked, cleaned up, in order.
 - weakSpots: 3–6 specific moments where ME's answer was weak, vague, too long, or missed the point, each with what to say next time.
