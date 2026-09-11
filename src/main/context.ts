@@ -12,6 +12,8 @@ import type { LLMService } from "./llm/LLMService";
 import type { AnswerEngine } from "./llm/AnswerEngine";
 import type { AutoAnswer } from "./llm/AutoAnswer";
 import type { ScreenshotService } from "./screenshot/ScreenshotService";
+import type { ReviewService } from "./review/ReviewService";
+import type { PracticeService } from "./practice/PracticeService";
 
 /**
  * Shared service registry. Services added in later milestones are declared optional
@@ -32,6 +34,8 @@ export interface AppContext {
   answers: AnswerEngine;
   auto: AutoAnswer;
   screenshots: ScreenshotService;
+  review: ReviewService;
+  practice: PracticeService;
   isDev: boolean;
   version: string;
 }

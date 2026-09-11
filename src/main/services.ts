@@ -7,6 +7,8 @@ import { registerExtensionHandlers } from './handlers/extension';
 import { registerAnswerHandlers } from './handlers/answers';
 import { registerProfileHandlers } from './handlers/profiles';
 import { registerScreenshotHandlers } from './handlers/screenshot';
+import { registerReviewHandlers } from './handlers/review';
+import { registerPracticeHandlers } from './handlers/practice';
 
 /**
  * Boots the feature services (audio, transcription, LLM, extension server, …)
@@ -20,6 +22,8 @@ export async function bootServices(ctx: AppContext): Promise<void> {
   registerAnswerHandlers(ctx);
   registerProfileHandlers(ctx);
   registerScreenshotHandlers(ctx);
+  registerReviewHandlers(ctx);
+  registerPracticeHandlers(ctx);
   await ctx.extension.start();
 
   // Placeholders replaced by real services in later milestones.

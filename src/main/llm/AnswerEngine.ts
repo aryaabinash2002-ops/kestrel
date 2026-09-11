@@ -154,6 +154,15 @@ export class AnswerEngine extends EventEmitter {
     void this.run({ question: text, kind: 'manual', questionEndTs });
   }
 
+  /** Follow-up chat box: free-form request answered with the full session context. */
+  chat(text: string): void {
+    const t = text.trim();
+    if (!t || !this.deps.sessions.session) return;
+    this.cancelActive('chat request');
+    this.queued = null;
+    void this.run({ question: t, kind: 'chat', questionEndTs: null, chat: true });
+  }
+
   /**
    * Auto-detected question. Applies the concurrency rules:
    *  - same question already in flight → ignore

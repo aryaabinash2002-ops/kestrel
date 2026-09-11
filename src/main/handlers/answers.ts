@@ -7,6 +7,7 @@ export function registerAnswerHandlers(ctx: AppContext): void {
   handle('answer:cancel', (_e, id) => engine.cancel(id));
   handle('answer:clear', () => engine.clear());
   handle('answer:current', () => engine.current());
+  handle('answer:chat', (_e, text) => engine.chat(text));
   handle('answer:list', (_e, sessionId) => ctx.db.listAnswers(sessionId));
   handle('llm:warm', () => engine.warm());
 

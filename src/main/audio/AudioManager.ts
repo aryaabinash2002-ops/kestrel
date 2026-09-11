@@ -180,7 +180,7 @@ export class AudioManager extends EventEmitter {
   setExtensionCapturing(flag: boolean): void {
     if (this.extensionCapturing === flag) return;
     this.extensionCapturing = flag;
-    if (this.listening) {
+    if (this.listening && this.themEnabled) {
       const mode = this.getSettings().audio.systemAudioMode;
       if (mode === 'auto' || mode === 'extension') void this.withCaptureVisible(() => this.startThem());
     }
@@ -188,7 +188,7 @@ export class AudioManager extends EventEmitter {
 
   /** Feed PCM that arrived from the extension (THEM channel). */
   ingestExternal(channel: Channel, pcm: Buffer, ts: number): void {
-    if (!this.listening) return;
+    if (!this.listening || (channel === 'THEM' && !this.themEnabled)) return;
     if (channel === 'THEM' && this.resolvedSystemMode !== 'extension') return;
     const st = channel === 'ME' ? this.me : this.them;
     if (!st.active) {
@@ -213,16 +213,24 @@ export class AudioManager extends EventEmitter {
     }
   }
 
-  async start(): Promise<AudioState> {
+  /** Practice mode captures the mic only (the TTS interviewer must not be heard as THEM). */
+  private themEnabled = true;
+
+  async start(opts: { them?: boolean } = {}): Promise<AudioState> {
     await this.ready;
     if (this.listening) return this.state();
     this.listening = true;
-    log.info('start listening');
+    this.themEnabled = opts.them !== false;
+    log.info('start listening', this.themEnabled ? '(ME + THEM)' : '(ME only)');
     // Sequential: Chromium queues media requests per document, so parallel requests
     // just wait on each other and make the first one look slow.
     await this.withCaptureVisible(async () => {
       await this.startMe();
-      await this.startThem();
+      if (this.themEnabled) await this.startThem();
+      else {
+        this.them = { ...this.blank('THEM'), deviceLabel: 'Off (practice mode)' };
+        this.resolvedSystemMode = null;
+      }
     });
     this.publish();
     return this.state();

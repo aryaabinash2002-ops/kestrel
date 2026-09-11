@@ -8,6 +8,7 @@ import { TranscriptView } from '@renderer/components/TranscriptView';
 import { TranscriptionStatus } from '@renderer/components/TranscriptionStatus';
 import { AnswerCard } from '@renderer/components/AnswerCard';
 import { ScreenshotCard } from '@renderer/components/ScreenshotCard';
+import { ChatBox } from '@renderer/components/ChatBox';
 import { StartSessionDialog } from '@renderer/components/setup/StartSessionDialog';
 import { useProfiles } from '@renderer/store/profiles';
 import { useAudio } from '@renderer/store/audio';
@@ -190,6 +191,7 @@ export default function Live() {
             </button>
             {transcriptOpen && <TranscriptView utterances={utterances} interim={interim} compact className="h-[calc(100%-2rem)] px-2 pb-2" />}
           </div>
+          <ChatBox compact={compact} />
         </>
       )}
     </div>

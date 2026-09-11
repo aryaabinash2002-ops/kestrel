@@ -51,7 +51,7 @@ export class AutoAnswer {
   }
 
   private enabled(): boolean {
-    return this.getSettings().autoAnswer && !!this.sessions.session;
+    return this.getSettings().autoAnswer && this.sessions.session?.mode === 'live';
   }
 
   private onQuestion(q: DetectedQuestion): void {

@@ -69,6 +69,11 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
             await new Promise((r) => setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_MS'] ?? 4000)));
             summary['cards'] = ctx.answers.current();
           }
+          if (process.env['KESTREL_SMOKE_CHAT']) {
+            ctx.answers.chat('Give me a shorter version with one number.');
+            await new Promise((r) => setTimeout(r, 2500));
+            summary['chat'] = ctx.answers.current().filter((c) => c.kind === 'chat');
+          }
           if (process.env['KESTREL_SMOKE_SCREENSHOT']) {
             try {
               await ctx.screenshots.solve({ region: false });

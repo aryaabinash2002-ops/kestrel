@@ -23,8 +23,13 @@ import { AnswerEngine } from "./llm/AnswerEngine";
 import { AutoAnswer } from "./llm/AutoAnswer";
 import { Classifier } from "./llm/Classifier";
 import { ScreenshotService } from "./screenshot/ScreenshotService";
+import { ReviewService } from "./review/ReviewService";
+import { PracticeService } from "./practice/PracticeService";
 
 const log = logger.scope('main');
+
+// Developer switch: run several isolated instances (smoke tests) side by side.
+if (process.env['KESTREL_USER_DATA']) app.setPath('userData', process.env['KESTREL_USER_DATA']);
 
 // Single instance: a second launch just focuses the panel.
 if (!app.requestSingleInstanceLock()) {
@@ -75,6 +80,8 @@ async function boot(): Promise<void> {
   const answers = new AnswerEngine({ llm, sessions, db, getSettings: () => settings.get() });
   const auto = new AutoAnswer(transcription, sessions, answers, new Classifier(llm, () => settings.get()), () => settings.get());
   const screenshots = new ScreenshotService({ llm, sessions, db, windows, paths, getSettings: () => settings.get() });
+  const review = new ReviewService({ llm, db, paths, windows, getSettings: () => settings.get() });
+  const practice = new PracticeService({ llm, db, sessions, audio, transcription, getSettings: () => settings.get() });
 
   ctx = {
     paths,
@@ -91,6 +98,8 @@ async function boot(): Promise<void> {
     answers,
     auto,
     screenshots,
+    review,
+    practice,
     isDev: is.dev,
     version: app.getVersion(),
   };
