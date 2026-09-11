@@ -66,6 +66,14 @@ async function init(): Promise<void> {
 $('toggle').addEventListener('click', async () => {
   const s = await ask({ type: 'get-status' });
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!s.capturing && !tab?.url?.startsWith('https://meet.google.com/')) {
+    render({
+      ...s,
+      lastError:
+        'Switch to your Google Meet tab first, then click this icon and press Start capture.',
+    });
+    return;
+  }
   render(
     await ask(s.capturing ? { type: 'stop-capture' } : { type: 'start-capture', tabId: tab?.id }),
   );

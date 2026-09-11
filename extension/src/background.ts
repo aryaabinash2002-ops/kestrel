@@ -7,6 +7,11 @@ import { loadSettings } from './protocol';
 
 const OFFSCREEN_URL = 'offscreen.html';
 
+/** Tabs where the user clicked the icon / pressed the command: Chrome grants tab capture only there. */
+const invokedTabs = new Set<number>();
+const NEEDS_CLICK =
+  'Open your Meet tab, then click the Kestrel icon there (or press Alt+Shift+K) and choose Start capture — Chrome only allows capturing a tab after that click.';
+
 const status: ExtStatus = {
   connection: 'disconnected',
   capturing: false,
@@ -88,15 +93,24 @@ async function meetTab(preferred?: number): Promise<chrome.tabs.Tab | null> {
   return tabs.find((t) => t.audible) ?? tabs[0] ?? null;
 }
 
-async function startCapture(preferredTab?: number): Promise<void> {
+async function startCapture(preferredTab?: number, fromUser = false): Promise<void> {
   const settings = await loadSettings();
   if (!settings.token) {
     status.lastError = 'Paste the pairing token from Kestrel → Settings → Audio first.';
+    await persistStatus();
     return;
   }
   const tab = await meetTab(preferredTab);
   if (!tab?.id) {
     status.lastError = 'Open a Google Meet tab first.';
+    await persistStatus();
+    return;
+  }
+  if (fromUser && preferredTab === tab.id) invokedTabs.add(tab.id);
+  if (!invokedTabs.has(tab.id)) {
+    // Calling tabCapture here would fail with Chrome's activeTab error; explain instead.
+    status.lastError = NEEDS_CLICK;
+    await persistStatus();
     return;
   }
   try {
@@ -104,7 +118,7 @@ async function startCapture(preferredTab?: number): Promise<void> {
     await ensureOffscreen();
     status.tabId = tab.id;
     status.lastError = null;
-    await send({
+    await sendToOffscreen({
       type: 'offscreen-start',
       streamId,
       token: settings.token,
@@ -114,9 +128,12 @@ async function startCapture(preferredTab?: number): Promise<void> {
     await chrome.action.setBadgeText({ text: 'ON' });
     await chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
   } catch (err) {
-    status.lastError = (err as Error).message ?? String(err);
+    const msg = (err as Error).message ?? String(err);
+    status.lastError = /invoked|activeTab/i.test(msg) ? NEEDS_CLICK : msg;
     status.capturing = false;
+    invokedTabs.delete(tab.id);
   }
+  await persistStatus();
 }
 
 async function stopCapture(): Promise<void> {
@@ -143,7 +160,7 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
       void restored.then(() => reply(status));
       return true;
     case 'start-capture':
-      void startCapture(msg.tabId ?? sender.tab?.id).then(() => reply(status));
+      void startCapture(msg.tabId ?? sender.tab?.id, true).then(() => reply(status));
       return true;
     case 'stop-capture':
       void stopCapture().then(() => reply(status));
@@ -201,13 +218,23 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
   }
 });
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'toggle-capture') return;
-  if (status.capturing) void stopCapture();
-  else void startCapture();
+  if (status.capturing) {
+    void stopCapture();
+    return;
+  }
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (active?.id) invokedTabs.add(active.id);
+  void startCapture(active?.id, true);
+});
+
+chrome.tabs.onUpdated.addListener((tabId, info) => {
+  if (info.status === 'loading') invokedTabs.delete(tabId);
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  invokedTabs.delete(tabId);
   if (status.tabId === tabId && status.capturing) void stopCapture();
 });
 
