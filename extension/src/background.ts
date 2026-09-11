@@ -40,6 +40,43 @@ function send(msg: ExtMessage): Promise<unknown> {
   return chrome.runtime.sendMessage(msg).catch(() => undefined);
 }
 
+/**
+ * The offscreen document's module script may not have registered its listener yet when
+ * createDocument() resolves; retry until the message is received.
+ */
+async function sendToOffscreen(msg: ExtMessage): Promise<boolean> {
+  for (let i = 0; i < 30; i++) {
+    try {
+      await chrome.runtime.sendMessage(msg);
+      return true;
+    } catch {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  status.lastError =
+    'Could not reach the capture page inside the extension — reload the extension.';
+  await persistStatus();
+  return false;
+}
+
+/** Status survives service-worker restarts (the popup reads it back). */
+async function persistStatus(): Promise<void> {
+  try {
+    await chrome.storage.session.set({ status });
+  } catch {
+    /* ignore */
+  }
+}
+async function restoreStatus(): Promise<void> {
+  try {
+    const raw = (await chrome.storage.session.get('status')) as { status?: Partial<ExtStatus> };
+    if (raw.status) Object.assign(status, raw.status);
+  } catch {
+    /* ignore */
+  }
+}
+const restored = restoreStatus();
+
 async function meetTab(preferred?: number): Promise<chrome.tabs.Tab | null> {
   if (preferred !== undefined) {
     const t = await chrome.tabs.get(preferred).catch(() => null);
@@ -93,14 +130,18 @@ async function stopCapture(): Promise<void> {
 async function testConnection(): Promise<void> {
   const settings = await loadSettings();
   await ensureOffscreen();
-  await send({ type: 'offscreen-connect', token: settings.token, port: settings.port });
+  status.lastError = null;
+  if (!settings.token)
+    status.lastError = 'Paste the pairing token from Kestrel → Settings → Audio first.';
+  await sendToOffscreen({ type: 'offscreen-connect', token: settings.token, port: settings.port });
+  await persistStatus();
 }
 
 chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
   switch (msg.type) {
     case 'get-status':
-      reply(status);
-      return false;
+      void restored.then(() => reply(status));
+      return true;
     case 'start-capture':
       void startCapture(msg.tabId ?? sender.tab?.id).then(() => reply(status));
       return true;
@@ -128,6 +169,7 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender, reply) => {
       return false;
     case 'meet-call': {
       status.inCall = msg.state === 'joined';
+      void persistStatus();
       if (sender.tab?.id) status.tabId = status.inCall ? sender.tab.id : status.tabId;
       void send({
         type: 'offscreen-forward',
@@ -169,6 +211,18 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   if (status.tabId === tabId && status.capturing) void stopCapture();
 });
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   void chrome.action.setBadgeText({ text: '' });
+  // Content scripts only auto-inject on page load: cover Meet tabs that are already open.
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
+    for (const t of tabs) {
+      if (t.id)
+        await chrome.scripting
+          .executeScript({ target: { tabId: t.id }, files: ['content.js'] })
+          .catch(() => undefined);
+    }
+  } catch {
+    /* ignore */
+  }
 });

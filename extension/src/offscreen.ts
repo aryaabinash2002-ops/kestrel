@@ -180,3 +180,7 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, _sender, reply) => {
       return false;
   }
 });
+
+void chrome.runtime
+  .sendMessage({ type: 'offscreen-status', status: {} } satisfies ExtMessage)
+  .catch(() => undefined);
