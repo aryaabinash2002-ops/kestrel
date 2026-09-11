@@ -158,6 +158,9 @@ export interface IpcInvokeMap {
   'app:openPath': { args: [path: string]; result: void };
   'app:permissions': { args: []; result: PermissionStatus };
   'app:requestMicPermission': { args: []; result: boolean };
+  /** Triggers the macOS Screen & System Audio Recording prompt (desktopCapturer probe). */
+  'app:requestScreenPermission': { args: []; result: { granted: boolean; message: string } };
+  'app:relaunch': { args: []; result: void };
   'app:openPrivacySettings': { args: [pane: 'microphone' | 'screen' | 'audio']; result: void };
   'app:deleteAllData': { args: []; result: void };
   'app:chooseDataDir': { args: []; result: string | null };

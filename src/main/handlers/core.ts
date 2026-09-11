@@ -1,4 +1,4 @@
-import { app, dialog, shell, systemPreferences } from 'electron';
+import { app, desktopCapturer, dialog, shell, systemPreferences } from 'electron';
 import { rmSync, existsSync } from 'node:fs';
 import { release } from 'node:os';
 import type { AppContext } from '../context';
@@ -52,6 +52,38 @@ export function registerCoreHandlers(ctx: AppContext): void {
   handle('app:requestMicPermission', async () => {
     if (process.platform !== 'darwin') return true;
     return systemPreferences.askForMediaAccess('microphone');
+  });
+
+  handle('app:requestScreenPermission', async () => {
+    // On macOS the first desktopCapturer call raises the system prompt; the grant only takes
+    // effect after the app restarts, which the onboarding screen explains.
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: { width: 0, height: 0 },
+      });
+      const status =
+        process.platform === 'darwin'
+          ? systemPreferences.getMediaAccessStatus('screen')
+          : 'granted';
+      const granted = status === 'granted' && sources.length > 0;
+      return {
+        granted,
+        message: granted
+          ? 'Screen & System Audio Recording is enabled.'
+          : 'Allow Kestrel under Privacy & Security → Screen & System Audio Recording, then restart Kestrel.',
+      };
+    } catch (err) {
+      return {
+        granted: false,
+        message: `Not granted yet (${err instanceof Error ? err.message : String(err)}). Allow it in Privacy & Security, then restart Kestrel.`,
+      };
+    }
+  });
+
+  handle('app:relaunch', () => {
+    app.relaunch();
+    app.exit(0);
   });
 
   handle('app:openPrivacySettings', async (_e, pane) => {

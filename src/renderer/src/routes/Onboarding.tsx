@@ -22,6 +22,7 @@ export default function Onboarding() {
   const [anthropic, setAnthropic] = useState('');
   const [deepgram, setDeepgram] = useState('');
   const [perm, setPerm] = useState<PermissionStatus | null>(null);
+  const [screenMsg, setScreenMsg] = useState<string | null>(null);
 
   const refreshPerm = () => void invoke('app:permissions').then(setPerm);
   useEffect(() => {
@@ -186,19 +187,44 @@ export default function Onboarding() {
                 status={perm?.screen ?? 'unknown'}
                 hint="macOS 14.2+: enable “System Audio Recording Only” for Kestrel (or for your terminal when running unpackaged) under Privacy & Security → Screen & System Audio Recording. Restart Kestrel afterwards."
                 action={
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void invoke('app:openPrivacySettings', 'audio')}
-                  >
-                    Open settings
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void invoke('app:requestScreenPermission').then((r) => {
+                          setScreenMsg(r.message);
+                          refreshPerm();
+                        })
+                      }
+                    >
+                      Allow
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void invoke('app:openPrivacySettings', 'audio')}
+                    >
+                      Settings
+                    </Button>
+                  </div>
                 }
               />
             )}
+            {screenMsg && (
+              <div className="flex items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+                <span>{screenMsg}</span>
+                {perm?.screen !== 'granted' && (
+                  <Button size="xs" variant="outline" onClick={() => void invoke('app:relaunch')}>
+                    Restart Kestrel
+                  </Button>
+                )}
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground">
-              You can also skip system audio entirely by using the Google Meet Chrome extension,
-              which captures the call tab directly.
+              macOS applies a new Screen &amp; System Audio Recording grant only after Kestrel
+              restarts. You can also skip system audio entirely by using the Google Meet Chrome
+              extension, which captures the call tab directly.
             </p>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setStep(2)}>

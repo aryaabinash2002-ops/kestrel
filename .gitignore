@@ -10,3 +10,4 @@ extension/dist/
 coverage/
 *.tsbuildinfo
 extension/kestrel-extension.zip
+release-next/

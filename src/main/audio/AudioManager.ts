@@ -171,6 +171,9 @@ export class AudioManager extends EventEmitter {
       }
       case 'warning': {
         const st = ev.channel === 'ME' ? this.me : this.them;
+        log.info(
+          `${ev.channel} warning: ${ev.warning}${st.deviceLabel ? ` (${st.deviceLabel})` : ''}`,
+        );
         if (ev.warning === 'signal-restored')
           st.warnings = st.warnings.filter((w) => w !== 'no-signal');
         else if (!st.warnings.includes(ev.warning)) st.warnings.push(ev.warning);
