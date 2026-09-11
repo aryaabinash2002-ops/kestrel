@@ -7,9 +7,13 @@ import { invoke } from '@renderer/lib/ipc';
 import { useAudio } from '@renderer/store/audio';
 import type { ExtensionPairingInfo } from '@shared/types/extension';
 import { toast } from '@renderer/store/toasts';
+import { Switch } from '@renderer/components/ui/switch';
+import { useSettings } from '@renderer/store/settings';
 
 export function ExtensionCard() {
   const ext = useAudio((s) => s.extension);
+  const autoStart = useSettings((s) => s.settings.autoStartOnMeetJoin);
+  const update = useSettings((s) => s.update);
   const [pairing, setPairing] = useState<ExtensionPairingInfo | null>(null);
   const load = () => void invoke('extension:pairing').then(setPairing).catch(() => setPairing(null));
   useEffect(load, []);
@@ -68,6 +72,13 @@ export function ExtensionCard() {
             Client: {ext.clientName} · {ext.inCall ? 'in a call' : 'not in a call'} · captions {ext.captionsAvailable ? 'available' : 'off'}
           </div>
         )}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <div>
+            <div className="text-sm">Auto-start when I join a Meet call</div>
+            <div className="text-[11px] text-muted-foreground">Starts a session and listening on join; ends it and opens the review when you leave.</div>
+          </div>
+          <Switch checked={autoStart} onCheckedChange={(v) => void update({ autoStartOnMeetJoin: v })} />
+        </div>
       </CardContent>
     </Card>
   );

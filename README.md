@@ -21,6 +21,16 @@ npm run build && npm run preview
 
 Useful scripts: `npm run typecheck`, `npm run lint`, `npm test`, `npm run package:mac`, `npm run package:win`, `npm run build:ext`.
 
+## Google Meet extension
+
+The extension captures only the Meet tab's audio (no notifications or music) and forwards Meet's built-in captions as a backup transcript with speaker names.
+
+1. `npm run build:ext` → `extension/dist` (also `extension/kestrel-extension.zip`).
+2. In Chrome/Edge/Brave/Arc open `chrome://extensions`, enable **Developer mode**, **Load unpacked**, pick `extension/dist`.
+3. In Kestrel → Settings → Audio → *Google Meet extension*, copy the pairing token. Open the extension popup → Pairing → paste token → **Save & test**.
+4. Join a Meet call and click the Kestrel icon once on that tab (or press `Alt+Shift+K`). Chrome only allows tab capture after the extension was invoked on the tab. With *auto-start* on, Kestrel starts a session when you join and opens the review when you leave.
+5. Turn on Meet captions (CC) to get speaker names and a fallback transcript if the transcription provider is down.
+
 ## Milestone status
 
 | # | Milestone | Status |
@@ -28,7 +38,7 @@ Useful scripts: `npm run typecheck`, `npm run lint`, `npm test`, `npm run packag
 | 1 | Skeleton: Electron + React + TS + Tailwind, typed IPC, keychain settings, SQLite | ✅ |
 | 2 | Audio capture (mic + system audio), device pickers, level meters | ✅ macOS verified; Windows untested |
 | 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (fake-server tests; real-key run pending) |
-| 4 | Google Meet Chrome extension | ⏳ |
+| 4 | Google Meet Chrome extension | ✅ (bridge E2E with simulated extension; real Meet call pending) |
 | 5 | LLM answers, prompt caching, warm connection, latency logging | ⏳ |
 | 6 | Instant auto-answering (speculative, parallel classifier) | ⏳ |
 | 7 | Profiles: résumé/JD upload, story bank, "Test with Meet" | ⏳ |

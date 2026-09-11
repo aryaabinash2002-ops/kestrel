@@ -3,7 +3,10 @@ import { handle } from '../ipc';
 
 export function registerSessionHandlers(ctx: AppContext): void {
   const sm = ctx.sessions;
-  handle('session:start', (_e, { profileId, mode }) => sm.start(profileId, mode));
+  handle('session:start', (_e, { profileId, mode }) => {
+    if (profileId) ctx.settings.set({ lastProfileId: profileId });
+    return sm.start(profileId, mode);
+  });
   handle('session:stop', () => sm.stop());
   handle('session:state', () => sm.state());
   handle('session:list', () => ctx.db.listSessions());

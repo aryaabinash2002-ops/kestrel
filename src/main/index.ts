@@ -17,6 +17,7 @@ import { attachSmokeTest } from "./smoke";
 import { SessionManager } from "./session/SessionManager";
 import { AudioManager } from "./audio/AudioManager";
 import { TranscriptionService } from "./transcription/TranscriptionService";
+import { ExtensionBridge } from "./extension/ExtensionBridge";
 
 const log = logger.scope('main');
 
@@ -58,6 +59,13 @@ async function boot(): Promise<void> {
   const sessions = new SessionManager(db);
   const audio = new AudioManager(() => windows.capture, () => settings.get());
   const transcription = new TranscriptionService(sessions, audio, secrets, () => settings.get());
+  const extension = new ExtensionBridge({
+    getPort: () => settings.get().extensionPort,
+    getToken: () => db.getMeta('extension_token'),
+    setToken: (t) => db.setMeta('extension_token', t),
+    appVersion: app.getVersion(),
+    isSessionActive: () => !!sessions.session,
+  });
 
   ctx = {
     paths,
@@ -69,6 +77,7 @@ async function boot(): Promise<void> {
     sessions,
     audio,
     transcription,
+    extension,
     isDev: is.dev,
     version: app.getVersion(),
   };
@@ -146,6 +155,7 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   try {
+    void ctx?.extension.stop();
     ctx?.db.close();
   } catch {
     /* ignore */

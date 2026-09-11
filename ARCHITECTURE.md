@@ -43,6 +43,17 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * `TranscriptionService` opens one transcriber per channel when a session starts (sockets are opened before speech begins), builds utterances from segment finals + interim (`speech_final` / `UtteranceEnd` / 2.5 s stale timeout close them), emits `interim`/`final` events for the question detector, persists finals through `SessionManager`, and applies `EchoFilter`: ME finals are held 600 ms and dropped when >70 % similar to THEM text heard in the last 3 s.
 * `KESTREL_STT_ENDPOINT=ws://…` points the app at a local/fake server. `tests/fakes/fakeDeepgram.ts` is a scriptable stand-in used by the tests.
 
+## Google Meet extension (M4)
+
+* `extension/` is a Manifest V3 extension bundled by `scripts/build-extension.mjs` (esbuild → `extension/dist`).
+  * `background.ts` (service worker) only coordinates: `chrome.tabCapture.getMediaStreamId` for the Meet tab, creates the offscreen document, relays content-script events. It may sleep while capture runs.
+  * `offscreen.ts` owns the tab `MediaStream`, an `AudioContext(16 kHz)` whose source is connected both to `destination` (so the user still hears the call) and to `worklet.js` (PCM16 80 ms chunks), and the WebSocket to the desktop app with reconnect/backoff. Chrome's MV3 CSP forbids blob: workers, so the worklet is a real file.
+  * `content/meetSelectors.ts` isolates every DOM selector (candidate lists); `content/meetCaptions.ts` detects call join/leave (Leave-call button) and observes the captions region, sending interim/final caption text + speaker.
+  * Tab capture needs a user gesture on the tab (popup click or the `Alt+Shift+K` command) — Chrome policy, not ours.
+* `src/main/extension/ExtensionBridge.ts` is the local WebSocket server (`ws://127.0.0.1:47600`, next free port if busy; only `chrome-extension://` / localhost origins). Protocol in `src/shared/types/extension.ts`: first frame must be `hello {token}` (token `KES-XXXX-XXXX`, stored in DB `meta`), then binary PCM frames and JSON `capture` / `call` / `caption` / `ping` messages; app → extension: `welcome`, `session`, `request-capture`, `pong`, `error {bad-token|busy}`.
+* `handlers/extension.ts`: extension audio → `AudioManager.ingestExternal('THEM')` (used when `systemAudioMode` is `extension` or `auto` with the extension streaming); call joined → auto-start session + listening (setting `autoStartOnMeetJoin`, reusing `lastProfileId`); call left → stop, end session, navigate to Review; captions → speaker-name hints for THEM utterances, and the full transcript source whenever the STT socket for that channel is not `open`.
+* Dev tool: `node scripts/dev/fake-extension.mjs --leave-after 12000` simulates the extension against a running app.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

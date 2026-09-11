@@ -64,6 +64,10 @@ export interface Settings {
     showLatency: boolean;
   };
   extensionPort: number;
+  /** Start a session + listening automatically when the extension reports a joined Meet call. */
+  autoStartOnMeetJoin: boolean;
+  /** Profile used for the last session (auto-started sessions reuse it). */
+  lastProfileId: string | null;
   /** Custom data folder (null = app userData). */
   dataDir: string | null;
   /** User overrides of the built-in prompt templates. */
@@ -112,6 +116,8 @@ export const DEFAULT_SETTINGS: Settings = {
     showLatency: false,
   },
   extensionPort: 47600,
+  autoStartOnMeetJoin: true,
+  lastProfileId: null,
   dataDir: null,
   prompts: {},
 };

@@ -69,6 +69,7 @@ export class TranscriptionService extends EventEmitter {
   };
   private staleTimer: NodeJS.Timeout | null = null;
   private running = false;
+  private speakerHint: { name: string; at: number } | null = null;
 
   constructor(
     private sessions: SessionManager,
@@ -263,6 +264,9 @@ export class TranscriptionService extends EventEmitter {
       isFinal: true,
       source: 'stt',
     };
+    if (channel === 'THEM' && this.speakerHint && Math.abs(this.speakerHint.at - lastWordWallMs) < 4000) {
+      u.speakerName = this.speakerHint.name;
+    }
     if (channel === 'ME' && this.audio.state().them.active) {
       // Hold so a simultaneous THEM result can be compared for echo.
       const timer = setTimeout(() => {
@@ -286,6 +290,11 @@ export class TranscriptionService extends EventEmitter {
   private commit(u: Utterance, lastWordWallMs: number): void {
     this.sessions.pushUtterance(u);
     this.emit('final', { channel: u.speaker as Channel, utterance: u, lastWordWallMs } satisfies FinalEvent);
+  }
+
+  /** Meet captions tell us who is speaking; label THEM utterances that end near the hint. */
+  setSpeakerHint(name: string, at: number): void {
+    this.speakerHint = { name, at };
   }
 
   /** Inject a caption-derived utterance (extension fallback). */

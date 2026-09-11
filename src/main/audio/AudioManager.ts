@@ -190,7 +190,27 @@ export class AudioManager extends EventEmitter {
   ingestExternal(channel: Channel, pcm: Buffer, ts: number): void {
     if (!this.listening) return;
     if (channel === 'THEM' && this.resolvedSystemMode !== 'extension') return;
+    const st = channel === 'ME' ? this.me : this.them;
+    if (!st.active) {
+      st.active = true;
+      st.error = null;
+      this.publish();
+    }
     this.emit('pcm', { channel, pcm, ts, source: 'extension' } satisfies PcmChunk);
+    // Level meter for extension audio (the capture renderer only meters local streams).
+    const now = Date.now();
+    if (now - this.lastLevelEmit[channel] >= 80) {
+      this.lastLevelEmit[channel] = now;
+      let sumSq = 0;
+      const n = pcm.length >> 1;
+      for (let i = 0; i < n; i++) {
+        const s = pcm.readInt16LE(i * 2) / 32768;
+        sumSq += s * s;
+      }
+      const rms = Math.sqrt(sumSq / Math.max(1, n));
+      const db = 20 * Math.log10(Math.max(rms, 1e-6));
+      emit('audio:level', { channel, level: Math.min(1, Math.max(0, (db + 50) / 40)), ts: now });
+    }
   }
 
   async start(): Promise<AudioState> {
