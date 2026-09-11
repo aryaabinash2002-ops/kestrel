@@ -19,6 +19,8 @@ npm run dev          # hot-reloading dev build
 npm run build && npm run preview
 ```
 
+Developer switches: `KESTREL_SMOKE=/path.png` (render + capture the panel, prints `SMOKE_RESULT`), `KESTREL_STT_ENDPOINT=ws://…` (point transcription at a fake server), `KESTREL_ANTHROPIC_BASE_URL=http://127.0.0.1:47800` + `node scripts/dev/fake-anthropic.mjs 47800` (offline LLM), `KESTREL_DEV_ANTHROPIC_ENV=1` (use `ANTHROPIC_API_KEY` from the environment when no key is stored — dev only).
+
 Useful scripts: `npm run typecheck`, `npm run lint`, `npm test`, `npm run package:mac`, `npm run package:win`, `npm run build:ext`.
 
 ## Google Meet extension
@@ -39,7 +41,7 @@ The extension captures only the Meet tab's audio (no notifications or music) and
 | 2 | Audio capture (mic + system audio), device pickers, level meters | ✅ macOS verified; Windows untested |
 | 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (fake-server tests; real-key run pending) |
 | 4 | Google Meet Chrome extension | ✅ (bridge E2E with simulated extension; real Meet call pending) |
-| 5 | LLM answers, prompt caching, warm connection, latency logging | ⏳ |
+| 5 | LLM answers, prompt caching, warm connection, latency logging | ✅ (verified against a fake Anthropic server; real-key run pending) |
 | 6 | Instant auto-answering (speculative, parallel classifier) | ⏳ |
 | 7 | Profiles: résumé/JD upload, story bank, "Test with Meet" | ⏳ |
 | 8 | Screenshot solve | ⏳ |

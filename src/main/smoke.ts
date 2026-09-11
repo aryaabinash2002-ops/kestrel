@@ -38,6 +38,24 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
           await new Promise((r) =>
             setTimeout(r, Number(process.env['KESTREL_SMOKE_SESSION_MS'] ?? 3000)),
           );
+          if (process.env['KESTREL_SMOKE_ANSWER']) {
+            // Inject a question from THEM and trigger "Answer now" (needs an LLM endpoint).
+            const sid = ctx.sessions.session?.id ?? '';
+            const nowMs = ctx.sessions.nowMs();
+            ctx.sessions.pushUtterance({
+              id: 'smoke_q',
+              sessionId: sid,
+              speaker: 'THEM',
+              text: 'Can you tell me about a time you led a difficult migration?',
+              startMs: nowMs - 3000,
+              endMs: nowMs - 200,
+              isFinal: true,
+              source: 'stt',
+            });
+            ctx.answers.answerNow();
+            await new Promise((r) => setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_MS'] ?? 4000)));
+            summary['cards'] = ctx.answers.current();
+          }
           summary['session'] = {
             transcription: ctx.transcription.states(),
             audio: ctx.audio.state(),

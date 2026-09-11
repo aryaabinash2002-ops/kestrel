@@ -108,6 +108,7 @@ export interface DiagnosticsData {
   latency: LatencySample[];
   transcriberStats: { channel: string; interimCount: number; finalCount: number; avgInterimGapMs: number }[];
   speculativeRestartRate: number;
+  cache?: { cached: boolean; prefixTokens: number; cacheMinimum: number } | null;
 }
 
 /**

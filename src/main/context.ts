@@ -8,6 +8,8 @@ import type { SessionManager } from "./session/SessionManager";
 import type { AudioManager } from "./audio/AudioManager";
 import type { TranscriptionService } from "./transcription/TranscriptionService";
 import type { ExtensionBridge } from "./extension/ExtensionBridge";
+import type { LLMService } from "./llm/LLMService";
+import type { AnswerEngine } from "./llm/AnswerEngine";
 
 /**
  * Shared service registry. Services added in later milestones are declared optional
@@ -24,6 +26,8 @@ export interface AppContext {
   audio: AudioManager;
   transcription: TranscriptionService;
   extension: ExtensionBridge;
+  llm: LLMService;
+  answers: AnswerEngine;
   isDev: boolean;
   version: string;
 }

@@ -54,6 +54,14 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * `handlers/extension.ts`: extension audio → `AudioManager.ingestExternal('THEM')` (used when `systemAudioMode` is `extension` or `auto` with the extension streaming); call joined → auto-start session + listening (setting `autoStartOnMeetJoin`, reusing `lastProfileId`); call left → stop, end session, navigate to Review; captions → speaker-name hints for THEM utterances, and the full transcript source whenever the STT socket for that channel is not `open`.
 * Dev tool: `node scripts/dev/fake-extension.mjs --leave-after 12000` simulates the extension against a running app.
 
+## Live answers (M5)
+
+* `LLMService` wraps one `@anthropic-ai/sdk` client (created once; the SDK's fetch transport keeps the connection alive). Everything streams; requests carry an `AbortSignal`. On the live path (`fast: true`) thinking is disabled and effort is `low` on models that support it (Haiku 4.5 takes neither parameter). `json()` uses structured outputs (`output_config.format`) with a free-form JSON fallback.
+* `ContextBuilder` renders the static prefix (system prompt template + résumé + JD + story bank + notes) as one system block and attaches `cache_control: ephemeral` only when the estimated prefix length reaches the model's minimum cacheable size (Haiku 4.5: 4096 tokens, Sonnet 5: 1024, Opus 5: 512). The per-request user message is `<earlier_summary>` (running 150-word summary, refreshed every 5 min) + `<transcript_recent>` (last 5 minutes, ≤ 7000 chars, ME/THEM labelled) + `Question: …`.
+* `AnswerEngine` runs one stream at a time. It parses the strict `HEADLINE:` / `POINTS:` format incrementally (`parseAnswer.ts`), emits `answer:event` deltas throttled to ~30/s, fires `headline` the moment the headline line completes, records `question_end_ts / request_start_ts / first_token_ts / headline_done_ts` per answer into `latency_samples`, and applies the concurrency rules: same question in flight → ignore; < 70 % streamed → cancel and restart; ≥ 70 % → queue; different auto answers ≥ 2 s apart; manual *Answer now* always overrides. `warm()` sends a `max_tokens: 1` request at session start (which also writes the prompt cache when the prefix qualifies).
+* Latency is shown per card (Settings → Look → *Show latency on cards*) and charted in Settings → Diag.
+* `scripts/dev/fake-anthropic.mjs` is a scriptable Messages-API stand-in (SSE streaming, cache accounting, 401s) used by `tests/answerEngine.test.ts` and for offline smoke runs.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).

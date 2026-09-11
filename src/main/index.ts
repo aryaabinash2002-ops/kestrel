@@ -18,6 +18,8 @@ import { SessionManager } from "./session/SessionManager";
 import { AudioManager } from "./audio/AudioManager";
 import { TranscriptionService } from "./transcription/TranscriptionService";
 import { ExtensionBridge } from "./extension/ExtensionBridge";
+import { LLMService } from "./llm/LLMService";
+import { AnswerEngine } from "./llm/AnswerEngine";
 
 const log = logger.scope('main');
 
@@ -66,6 +68,8 @@ async function boot(): Promise<void> {
     appVersion: app.getVersion(),
     isSessionActive: () => !!sessions.session,
   });
+  const llm = new LLMService(secrets);
+  const answers = new AnswerEngine({ llm, sessions, db, getSettings: () => settings.get() });
 
   ctx = {
     paths,
@@ -78,6 +82,8 @@ async function boot(): Promise<void> {
     audio,
     transcription,
     extension,
+    llm,
+    answers,
     isDev: is.dev,
     version: app.getVersion(),
   };
