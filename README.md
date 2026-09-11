@@ -42,7 +42,7 @@ The extension captures only the Meet tab's audio (no notifications or music) and
 | 3 | Streaming transcription (Deepgram / AssemblyAI), live transcript, echo filter | ✅ (fake-server tests; real-key run pending) |
 | 4 | Google Meet Chrome extension | ✅ (bridge E2E with simulated extension; real Meet call pending) |
 | 5 | LLM answers, prompt caching, warm connection, latency logging | ✅ (verified against a fake Anthropic server; real-key run pending) |
-| 6 | Instant auto-answering (speculative, parallel classifier) | ⏳ |
+| 6 | Instant auto-answering (speculative, parallel classifier) | ✅ (E2E with audio fixture + fake servers; tuning on a real Meet call pending) |
 | 7 | Profiles: résumé/JD upload, story bank, "Test with Meet" | ⏳ |
 | 8 | Screenshot solve | ⏳ |
 | 9 | Follow-up chat box | ⏳ |

@@ -20,6 +20,8 @@ import { TranscriptionService } from "./transcription/TranscriptionService";
 import { ExtensionBridge } from "./extension/ExtensionBridge";
 import { LLMService } from "./llm/LLMService";
 import { AnswerEngine } from "./llm/AnswerEngine";
+import { AutoAnswer } from "./llm/AutoAnswer";
+import { Classifier } from "./llm/Classifier";
 
 const log = logger.scope('main');
 
@@ -70,6 +72,7 @@ async function boot(): Promise<void> {
   });
   const llm = new LLMService(secrets);
   const answers = new AnswerEngine({ llm, sessions, db, getSettings: () => settings.get() });
+  const auto = new AutoAnswer(transcription, sessions, answers, new Classifier(llm, () => settings.get()), () => settings.get());
 
   ctx = {
     paths,
@@ -84,6 +87,7 @@ async function boot(): Promise<void> {
     extension,
     llm,
     answers,
+    auto,
     isDev: is.dev,
     version: app.getVersion(),
   };

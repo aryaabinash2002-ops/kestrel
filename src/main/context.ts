@@ -10,6 +10,7 @@ import type { TranscriptionService } from "./transcription/TranscriptionService"
 import type { ExtensionBridge } from "./extension/ExtensionBridge";
 import type { LLMService } from "./llm/LLMService";
 import type { AnswerEngine } from "./llm/AnswerEngine";
+import type { AutoAnswer } from "./llm/AutoAnswer";
 
 /**
  * Shared service registry. Services added in later milestones are declared optional
@@ -28,6 +29,7 @@ export interface AppContext {
   extension: ExtensionBridge;
   llm: LLMService;
   answers: AnswerEngine;
+  auto: AutoAnswer;
   isDev: boolean;
   version: string;
 }

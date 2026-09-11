@@ -187,6 +187,12 @@ export class AnswerEngine extends EventEmitter {
     return Math.min(1, this.active.chars / TYPICAL_ANSWER_CHARS);
   }
 
+  /** The final transcript arrived: record the true end of the question for latency stats. */
+  updateQuestionEnd(id: string, ts: number): void {
+    const card = this.cards.find((c) => c.id === id);
+    if (card) card.latency.questionEndTs = ts;
+  }
+
   activeQuestion(): { id: string; question: string; speculative: boolean } | null {
     if (!this.active || this.active.done) return null;
     return { id: this.active.card.id, question: this.active.card.question, speculative: this.active.card.latency.speculative };

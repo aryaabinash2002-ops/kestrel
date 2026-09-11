@@ -62,6 +62,13 @@ This document is kept current as milestones land. Status per milestone is in `RE
 * Latency is shown per card (Settings → Look → *Show latency on cards*) and charted in Settings → Diag.
 * `scripts/dev/fake-anthropic.mjs` is a scriptable Messages-API stand-in (SSE streaming, cache accounting, 401s) used by `tests/answerEngine.test.ts` and for offline smoke runs.
 
+## Instant auto-answering (M6)
+
+* `detection/QuestionDetector.ts` — the §5.3 heuristic (`looksLikeQuestion`, a single precompiled regex, ≈ µs per call) plus the §5.2 state machine fed by THEM interim/final events: a stable interim (no new words for 350 ms) that looks like a question emits `question {speculative: true}`; every later stable text or the final emits `update` with the word overlap against the text already answered — `restart: true` below 80 %, otherwise the running answer is kept (only its `questionEndTs` is corrected). Non-question finals emit `statement`.
+* `llm/AutoAnswer.ts` glues it together: `question` → `AnswerEngine.requestAuto` (+ `question:detected` for the UI) and, in parallel, `Classifier.classify` (JSON `{is_question, question, type}` via the fast model). The classifier never gates the answer: `is_question=false` → the card is discarded (fades out), `smalltalk` with smalltalk answers off → card discarded and a clickable chip shown, otherwise the card is labelled with the type. `update.restart` → `requestAuto({restartOf: cardId})` swaps the card in place (the shown headline stays until replaced).
+* Concurrency rules live in `AnswerEngine.requestAuto` (M5 section). Diagnostics report speculative share and restart rate (`restarts / speculativeStarts`, target < 20 %).
+* `tests/e2e.instantAnswer.test.ts` streams `tests/fixtures/question.wav` (16 kHz PCM) through the real `TranscriptionService` + `DeepgramTranscriber` (against the fake Deepgram) into `AutoAnswer` + `AnswerEngine` (against the fake Anthropic) and asserts: the answer starts before the final transcript exists, a matching final does not restart it, a materially longer final does, statements never answer, smalltalk becomes a chip.
+
 ## Storage
 
 * `settings.json` in the Electron userData folder — no secrets, validated on write (`SettingsStore.assertNoSecrets`).
