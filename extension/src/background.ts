@@ -247,6 +247,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 chrome.runtime.onInstalled.addListener(async () => {
   void chrome.action.setBadgeText({ text: '' });
+  // A reload/update starts clean: forget stale errors and capture state from the previous version.
+  status.lastError = null;
+  status.capturing = false;
+  await persistStatus();
   // Content scripts only auto-inject on page load: cover Meet tabs that are already open.
   try {
     const tabs = (await chrome.tabs.query({})).filter((t) => isCallTab(t.url));
