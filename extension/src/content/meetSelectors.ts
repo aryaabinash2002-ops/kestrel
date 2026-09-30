@@ -27,7 +27,18 @@ export const SELECTORS = {
   captionText: ['.bh44bd', '.iTTPOb', '.ygicle', '[jsname="YSxPC"]', 'span:last-child'],
   /** Present only while in a call. */
   leaveCallButton: [
+    // Google Meet
     'button[aria-label="Leave call"]',
+    // Zoom web client
+    'button[aria-label="Leave"]',
+    '.footer-button__leave',
+    'button[aria-label="End"]',
+    // Microsoft Teams
+    'button[data-tid="hangup-main-btn"]',
+    'button[aria-label*="Leave (" i]',
+    // Webex
+    'button[data-test="leave-button"]',
+    'button[aria-label*="Leave meeting" i]',
     'button[aria-label*="Leave call"]',
     'button[aria-label*="leave call" i]',
     '[jsname="CQylAd"]',

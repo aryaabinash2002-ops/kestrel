@@ -7,10 +7,17 @@ import { loadSettings } from './protocol';
 
 const OFFSCREEN_URL = 'offscreen.html';
 
+/** Web clients whose tab audio can be captured. */
+const CALL_HOSTS =
+  /^https:\/\/(meet\.google\.com|[a-z0-9-]+\.zoom\.us|zoom\.us|teams\.microsoft\.com|teams\.live\.com|[a-z0-9.-]+\.webex\.com)\//i;
+export function isCallTab(url?: string): boolean {
+  return !!url && CALL_HOSTS.test(url);
+}
+
 /** Tabs where the user clicked the icon / pressed the command: Chrome grants tab capture only there. */
 const invokedTabs = new Set<number>();
 const NEEDS_CLICK =
-  'Open your Meet tab, then click the Kestrel icon there (or press Alt+Shift+K) and choose Start capture — Chrome only allows capturing a tab after that click.';
+  'Open your call tab (Meet, Zoom, Teams or Webex), then click the Kestrel icon there (or press Alt+Shift+K) and choose Start capture — Chrome only allows capturing a tab after that click.';
 
 const status: ExtStatus = {
   connection: 'disconnected',
@@ -85,11 +92,11 @@ const restored = restoreStatus();
 async function meetTab(preferred?: number): Promise<chrome.tabs.Tab | null> {
   if (preferred !== undefined) {
     const t = await chrome.tabs.get(preferred).catch(() => null);
-    if (t?.url?.startsWith('https://meet.google.com/')) return t;
+    if (isCallTab(t?.url)) return t;
   }
   const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (active?.url?.startsWith('https://meet.google.com/')) return active;
-  const tabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
+  if (isCallTab(active?.url)) return active ?? null;
+  const tabs = (await chrome.tabs.query({})).filter((t) => isCallTab(t.url));
   return tabs.find((t) => t.audible) ?? tabs[0] ?? null;
 }
 
@@ -102,7 +109,7 @@ async function startCapture(preferredTab?: number, fromUser = false): Promise<vo
   }
   const tab = await meetTab(preferredTab);
   if (!tab?.id) {
-    status.lastError = 'Open a Google Meet tab first.';
+    status.lastError = 'Open a Google Meet, Zoom, Teams or Webex tab first.';
     await persistStatus();
     return;
   }
@@ -242,7 +249,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   void chrome.action.setBadgeText({ text: '' });
   // Content scripts only auto-inject on page load: cover Meet tabs that are already open.
   try {
-    const tabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
+    const tabs = (await chrome.tabs.query({})).filter((t) => isCallTab(t.url));
     for (const t of tabs) {
       if (t.id)
         await chrome.scripting

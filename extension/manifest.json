@@ -1,30 +1,82 @@
 {
   "manifest_version": 3,
-  "name": "Kestrel for Google Meet",
-  "description": "Streams the audio of your Google Meet tab to the Kestrel desktop app and reads Meet captions as a backup transcript.",
+  "name": "Kestrel for Meet, Zoom, Teams & Webex",
+  "description": "Streams the audio of your Google Meet, Zoom, Teams or Webex web-client tab to the Kestrel desktop app and reads Meet captions as a backup transcript.",
   "version": "0.1.0",
   "minimum_chrome_version": "116",
-  "permissions": ["tabCapture", "offscreen", "storage", "activeTab", "tabs", "scripting"],
-  "host_permissions": ["https://meet.google.com/*"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "action": {
-    "default_title": "Kestrel — start/stop Meet capture",
-    "default_popup": "popup.html",
-    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "https://*.zoom.us/*",
+    "https://zoom.us/*",
+    "https://teams.microsoft.com/*",
+    "https://teams.live.com/*",
+    "https://*.webex.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
   },
-  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Kestrel \u2014 start/stop call capture",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://meet.google.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "commands": {
     "toggle-capture": {
-      "suggested_key": { "default": "Alt+Shift+K" },
+      "suggested_key": {
+        "default": "Alt+Shift+K"
+      },
       "description": "Start / stop Kestrel capture on the current Meet tab"
     }
   },
-  "web_accessible_resources": [{ "resources": ["worklet.js"], "matches": ["https://meet.google.com/*"] }]
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "worklet.js"
+      ],
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*"
+      ]
+    }
+  ]
 }

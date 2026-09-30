@@ -27,7 +27,7 @@
   <body>
     <header><span id="dot" class="dot"></span><b>Kestrel</b><span id="conn" class="muted">Not connected</span></header>
     <main>
-      <div class="row"><span>Meet call</span><span id="call" class="muted">—</span></div>
+      <div class="row"><span>Call</span><span id="call" class="muted">—</span></div>
       <div class="row"><span>Tab audio capture</span><span id="cap" class="muted">Off</span></div>
       <div class="row"><span>Captions backup</span><span id="captions" class="muted">Off</span></div>
       <div id="error" class="err" hidden></div>
@@ -41,7 +41,7 @@
         <label style="margin-top:8px;flex-direction:row;display:flex;align-items:center;gap:6px"><input id="auto" type="checkbox" style="width:auto" /> Start capture automatically when I join a call</label>
         <div class="row" style="margin-top:8px"><button id="save">Save &amp; test</button><span id="test" class="muted"></span></div>
       </details>
-      <div class="muted">Kestrel must be running on this computer. Capture only works after you click this icon (or press Alt+Shift+K) on the Meet tab once.</div>
+      <div class="muted">Works on Google Meet, Zoom, Teams and Webex web clients. Kestrel must be running on this computer, and capture only starts after you click this icon (or press Alt+Shift+K) on the call tab once. Using the Zoom/Teams desktop app? Use Kestrel → Settings → Audio → System audio instead.</div>
     </main>
     <script src="popup.js" type="module"></script>
   </body>

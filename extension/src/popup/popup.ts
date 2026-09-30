@@ -55,7 +55,12 @@ async function init(): Promise<void> {
   await refresh();
   // Ask the current tab whether it is in a call so the popup is accurate even if the worker slept.
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id && tab.url?.startsWith('https://meet.google.com/')) {
+  if (
+    tab?.id &&
+    /^https:\/\/(meet\.google\.com|[a-z0-9-]+\.zoom\.us|zoom\.us|teams\.microsoft\.com|teams\.live\.com|[a-z0-9.-]+\.webex\.com)\//i.test(
+      tab.url ?? '',
+    )
+  ) {
     chrome.tabs
       .sendMessage(tab.id, { type: 'meet-query' } satisfies ExtMessage)
       .catch(() => undefined);
@@ -66,11 +71,16 @@ async function init(): Promise<void> {
 $('toggle').addEventListener('click', async () => {
   const s = await ask({ type: 'get-status' });
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!s.capturing && !tab?.url?.startsWith('https://meet.google.com/')) {
+  if (
+    !s.capturing &&
+    !/^https:\/\/(meet\.google\.com|[a-z0-9-]+\.zoom\.us|zoom\.us|teams\.microsoft\.com|teams\.live\.com|[a-z0-9.-]+\.webex\.com)\//i.test(
+      tab?.url ?? '',
+    )
+  ) {
     render({
       ...s,
       lastError:
-        'Switch to your Google Meet tab first, then click this icon and press Start capture.',
+        'Switch to your call tab (Meet, Zoom, Teams or Webex web client) first, then click this icon and press Start capture. For the Zoom desktop app use Kestrel → Settings → Audio → System audio instead.',
     });
     return;
   }
