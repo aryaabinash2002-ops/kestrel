@@ -91,7 +91,9 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
               id: 'smoke_q',
               sessionId: sid,
               speaker: 'THEM',
-              text: 'Can you tell me about a time you led a difficult migration?',
+              text:
+                process.env['KESTREL_SMOKE_QUESTION'] ??
+                'Can you tell me about a time you led a difficult migration?',
               startMs: nowMs - 3000,
               endMs: nowMs - 200,
               isFinal: true,
