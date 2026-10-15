@@ -5,6 +5,15 @@ import type { AppContext } from '../context';
 import { emit, handle } from '../ipc';
 import { logger } from '../logger';
 
+function platformName(url: string): string {
+  const u = url.toLowerCase();
+  if (u.includes('zoom.us')) return 'Zoom';
+  if (u.includes('meet.google.com')) return 'Google Meet';
+  if (u.includes('teams.')) return 'Microsoft Teams';
+  if (u.includes('webex.com')) return 'Webex';
+  return 'Call';
+}
+
 const log = logger.scope('extension');
 
 const SELF_NAMES = new Set(['you', 'tú', 'vous', 'du', 'você', 'あなた', 'आप', 'me']);
@@ -55,7 +64,7 @@ export function registerExtensionHandlers(ctx: AppContext): void {
     return dir;
   });
 
-  // ----- audio from the Meet tab → THEM channel -----
+  // ----- audio from the call tab → THEM channel -----
   bridge.on('audio', (pcm: Buffer, ts: number) => ctx.audio.ingestExternal('THEM', pcm, ts));
   bridge.on('capture', (started: boolean) => ctx.audio.setExtensionCapturing(started));
 
@@ -63,7 +72,8 @@ export function registerExtensionHandlers(ctx: AppContext): void {
   bridge.on('call', async (state: 'joined' | 'left', url: string) => {
     const settings = ctx.settings.get();
     if (state === 'joined') {
-      log.info('Meet call joined', url);
+      const platform = platformName(url);
+      log.info(`${platform} call joined`, url);
       if (!settings.autoStartOnMeetJoin) return;
       if (!ctx.sessions.session) {
         ctx.sessions.start(settings.lastProfileId, 'live');
@@ -75,11 +85,11 @@ export function registerExtensionHandlers(ctx: AppContext): void {
       }
       emit('toast', {
         kind: 'info',
-        title: 'Google Meet call detected',
+        title: `${platform} call detected`,
         message: 'Kestrel is listening.',
       });
     } else {
-      log.info('Meet call left');
+      log.info('call left');
       const s = ctx.sessions.session;
       if (!s) return;
       if (ctx.audio.state().listening) await ctx.audio.stop();

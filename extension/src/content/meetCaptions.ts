@@ -1,6 +1,6 @@
 /**
- * Content script for meet.google.com: detects call start/end and, when the user has
- * turned on Meet's built-in captions, forwards caption text + speaker names.
+ * Content script for call web clients (Meet, Zoom, Teams, Webex): detects call start/end
+ * and, on Google Meet with built-in captions on, forwards caption text + speaker names.
  */
 import type { ExtMessage } from '../protocol';
 import { SELECTORS, query, queryAll } from './meetSelectors';
@@ -15,8 +15,20 @@ function send(msg: ExtMessage): void {
 
 // ----- call state -----
 let inCall = false;
+/** Fallback when no selector matches (Zoom/Teams rename classes often): a visible button labelled Leave/End. */
+function leaveButtonByText(): boolean {
+  for (const b of Array.from(document.querySelectorAll('button'))) {
+    const t = (b.textContent ?? '').trim();
+    if (
+      (t === 'Leave' || t === 'End' || t === 'Leave meeting' || t === 'End meeting') &&
+      b.offsetParent
+    )
+      return true;
+  }
+  return false;
+}
 function checkCall(): void {
-  const now = !!query(SELECTORS.leaveCallButton);
+  const now = !!query(SELECTORS.leaveCallButton) || leaveButtonByText();
   if (now !== inCall) {
     inCall = now;
     send({ type: 'meet-call', state: now ? 'joined' : 'left', url: location.href });

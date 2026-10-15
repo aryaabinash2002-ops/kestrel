@@ -4,15 +4,9 @@
  */
 import type { ExtMessage, ExtStatus } from './protocol';
 import { loadSettings } from './protocol';
+import { isCallTab } from './callHosts';
 
 const OFFSCREEN_URL = 'offscreen.html';
-
-/** Web clients whose tab audio can be captured. */
-const CALL_HOSTS =
-  /^https:\/\/(meet\.google\.com|[a-z0-9-]+\.zoom\.us|zoom\.us|teams\.microsoft\.com|teams\.live\.com|[a-z0-9.-]+\.webex\.com)\//i;
-export function isCallTab(url?: string): boolean {
-  return !!url && CALL_HOSTS.test(url);
-}
 
 /** Tabs where the user clicked the icon / pressed the command: Chrome grants tab capture only there. */
 const invokedTabs = new Set<number>();
@@ -36,7 +30,8 @@ async function ensureOffscreen(): Promise<void> {
   await chrome.offscreen.createDocument({
     url: OFFSCREEN_URL,
     reasons: [chrome.offscreen.Reason.USER_MEDIA],
-    justification: 'Capture Google Meet tab audio and stream it to the Kestrel desktop app',
+    justification:
+      'Capture call tab audio (Meet, Zoom, Teams, Webex) and stream it to the Kestrel desktop app',
   });
 }
 
@@ -251,7 +246,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   status.lastError = null;
   status.capturing = false;
   await persistStatus();
-  // Content scripts only auto-inject on page load: cover Meet tabs that are already open.
+  // Content scripts only auto-inject on page load: cover call tabs that are already open.
   try {
     const tabs = (await chrome.tabs.query({})).filter((t) => isCallTab(t.url));
     for (const t of tabs) {

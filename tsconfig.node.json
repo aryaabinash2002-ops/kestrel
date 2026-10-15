@@ -1,6 +1,7 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
   "include": [
+    "extension/src/callHosts.ts",
     "electron.vite.config.*",
     "vitest.config.*",
     "src/main/**/*",

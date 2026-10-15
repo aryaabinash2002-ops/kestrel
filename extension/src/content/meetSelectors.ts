@@ -29,10 +29,14 @@ export const SELECTORS = {
   leaveCallButton: [
     // Google Meet
     'button[aria-label="Leave call"]',
-    // Zoom web client
+    // Zoom web client (classic + PWA markup)
     'button[aria-label="Leave"]',
-    '.footer-button__leave',
     'button[aria-label="End"]',
+    '.footer-button__leave',
+    '.footer__leave-btn',
+    'button[class*="leave-btn"]',
+    '[class*="footer__leave"] button',
+    'button[aria-label^="Leave" i]',
     // Microsoft Teams
     'button[data-tid="hangup-main-btn"]',
     'button[aria-label*="Leave (" i]',
