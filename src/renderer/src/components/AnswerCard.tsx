@@ -116,7 +116,7 @@ export function AnswerCard({
         >
           {card.headline ||
             (streaming ? (
-              <span className="text-muted-foreground">Thinking…</span>
+              <span className="text-muted-foreground">Answering…</span>
             ) : card.status === 'error' ? (
               <span className="text-destructive">{card.error ?? 'Failed'}</span>
             ) : (

@@ -6,6 +6,9 @@ import { LLMService } from '../src/main/llm/LLMService';
 let server: Server;
 let baseUrl = '';
 let lastBody: Record<string, unknown> = {};
+let stallFirst = 0; // number of upcoming stream requests that should hang until aborted
+let rateLimitNext = 0; // number of upcoming requests answered with 429
+let requests = 0;
 
 beforeAll(async () => {
   server = createServer((req, res) => {
@@ -20,6 +23,19 @@ beforeAll(async () => {
         return;
       }
       lastBody = JSON.parse(raw);
+      requests++;
+      if (rateLimitNext > 0) {
+        rateLimitNext--;
+        res.writeHead(429, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: { message: 'rate limited' } }));
+        return;
+      }
+      if (stallFirst > 0) {
+        stallFirst--;
+        res.writeHead(200, { 'content-type': 'text/event-stream' });
+        req.on('close', () => res.end());
+        return; // never writes a token until the client aborts
+      }
       if (req.headers.authorization !== 'Bearer good') {
         res.writeHead(401, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ error: { message: 'bad key' } }));
@@ -130,6 +146,48 @@ describe('openaiCompat', () => {
     });
     expect(j.type).toBe('behavioral');
     expect(lastBody['stream']).toBe(false);
+  });
+
+  it('hedges a stalled stream and takes the second request', async () => {
+    stallFirst = 1;
+    requests = 0;
+    const t0 = Date.now();
+    const deltas: string[] = [];
+    const r = await chatStream(
+      { baseUrl, apiKey: 'good', model: 'm' },
+      {
+        messages: [{ role: 'user', content: 'q' }],
+        maxTokens: 50,
+        hedgeAfterMs: 150,
+        onDelta: (d) => deltas.push(d),
+      },
+    );
+    expect(r.text).toBe('HEADLINE: I can help.\nPOINTS:\n- one');
+    expect(deltas.length).toBe(3);
+    expect(requests).toBe(2);
+    expect(Date.now() - t0).toBeLessThan(2000);
+  });
+
+  it('retries a 429 before any token', async () => {
+    rateLimitNext = 1;
+    requests = 0;
+    const r = await chatStream(
+      { baseUrl, apiKey: 'good', model: 'm' },
+      {
+        messages: [{ role: 'user', content: 'q' }],
+        maxTokens: 50,
+        hedgeAfterMs: 0,
+        onDelta: () => undefined,
+      },
+    );
+    expect(r.text.startsWith('HEADLINE')).toBe(true);
+    expect(requests).toBe(2);
+    rateLimitNext = 1;
+    const text = await chatComplete(
+      { baseUrl, apiKey: 'good', model: 'm' },
+      { messages: [{ role: 'user', content: 'q' }], maxTokens: 5 },
+    );
+    expect(text).toContain('behavioral');
   });
 
   it('fails clearly without a key', async () => {

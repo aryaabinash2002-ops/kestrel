@@ -88,7 +88,11 @@ export interface CompatStreamArgs {
   think?: boolean;
   signal?: AbortSignal;
   onDelta: (delta: string) => void;
+  /** Fire a second identical request if no token arrived after this long (tail-latency hedge). */
+  hedgeAfterMs?: number;
 }
+
+const RETRYABLE = /^(429|5\d\d):/;
 
 export interface CompatResult {
   text: string;
@@ -96,7 +100,7 @@ export interface CompatResult {
   usage: { input: number; output: number };
 }
 
-export async function chatStream(cfg: CompatConfig, a: CompatStreamArgs): Promise<CompatResult> {
+async function chatStreamOnce(cfg: CompatConfig, a: CompatStreamArgs): Promise<CompatResult> {
   const res = await fetch(endpoint(cfg.baseUrl), {
     method: 'POST',
     headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' },
@@ -157,9 +161,92 @@ export async function chatStream(cfg: CompatConfig, a: CompatStreamArgs): Promis
   return { text, finishReason: finish, usage };
 }
 
+/**
+ * Hedged stream: free/shared endpoints occasionally stall for many seconds before the first
+ * byte. After `hedgeAfterMs` without a token a second identical request starts; the first one
+ * to produce a token wins and the other is aborted. Failures before any token are retried
+ * (up to 3 attempts in total, short pause on 429/5xx).
+ */
+export function chatStream(cfg: CompatConfig, a: CompatStreamArgs): Promise<CompatResult> {
+  const hedgeAfter = a.hedgeAfterMs ?? 1800;
+  const MAX_ATTEMPTS = 3;
+  return new Promise<CompatResult>((resolve, reject) => {
+    let winner = -1;
+    let attempts = 0;
+    let running = 0;
+    let lastErr: unknown = null;
+    let settled = false;
+    const controllers: AbortController[] = [];
+    let hedgeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      if (hedgeTimer) clearTimeout(hedgeTimer);
+      for (const c of controllers) c.abort();
+      fn();
+    };
+    a.signal?.addEventListener('abort', () =>
+      finish(() => reject(a.signal?.reason ?? new Error('aborted'))),
+    );
+
+    const launch = () => {
+      if (settled || attempts >= MAX_ATTEMPTS) return;
+      const idx = attempts++;
+      running++;
+      const ac = new AbortController();
+      controllers.push(ac);
+      chatStreamOnce(cfg, {
+        ...a,
+        signal: ac.signal,
+        onDelta: (d) => {
+          if (settled) return;
+          if (winner === -1) {
+            winner = idx;
+            if (hedgeTimer) clearTimeout(hedgeTimer);
+            controllers.forEach((c, i) => i !== idx && c.abort());
+          }
+          if (winner === idx) a.onDelta(d);
+        },
+      }).then(
+        (res) => {
+          if (winner === idx || (winner === -1 && res.text)) finish(() => resolve(res));
+          else if (winner === -1) {
+            // Empty stream without a token: treat as a failure of this attempt.
+            running--;
+            lastErr = new Error('empty response');
+            if (running === 0) scheduleRetry(0);
+          }
+        },
+        (err) => {
+          if (settled || winner === idx) return;
+          running--;
+          if (winner !== -1) return; // a loser being aborted
+          lastErr = err;
+          if (attempts >= MAX_ATTEMPTS && running === 0) finish(() => reject(err));
+          else if (running === 0)
+            scheduleRetry(RETRYABLE.test(String((err as Error).message)) ? 400 : 0);
+        },
+      );
+      if (idx === 0 && hedgeAfter > 0)
+        hedgeTimer = setTimeout(() => winner === -1 && launch(), hedgeAfter);
+    };
+    const scheduleRetry = (delay: number) => {
+      if (settled) return;
+      if (attempts >= MAX_ATTEMPTS) {
+        finish(() => reject(lastErr instanceof Error ? lastErr : new Error(String(lastErr))));
+        return;
+      }
+      setTimeout(launch, delay);
+    };
+    launch();
+  });
+}
+
 export async function chatComplete(
   cfg: CompatConfig,
   a: { messages: ChatMessage[]; maxTokens: number; temperature?: number; signal?: AbortSignal },
+  retried = false,
 ): Promise<string> {
   const res = await fetch(endpoint(cfg.baseUrl), {
     method: 'POST',
@@ -174,7 +261,14 @@ export async function chatComplete(
     }),
     signal: combinedSignal(a.signal, 90_000),
   });
-  if (!res.ok) throw new Error(await errorMessage(res));
+  if (!res.ok) {
+    const msg = await errorMessage(res);
+    if (RETRYABLE.test(msg) && !a.signal?.aborted && !retried) {
+      await new Promise((r) => setTimeout(r, 400));
+      return chatComplete(cfg, a, true);
+    }
+    throw new Error(msg);
+  }
   const j = (await res.json()) as { choices?: Array<{ message?: { content?: string | null } }> };
   return j.choices?.[0]?.message?.content ?? '';
 }
