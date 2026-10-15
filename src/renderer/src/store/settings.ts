@@ -18,7 +18,7 @@ export const useSettings = create<SettingsState>((set) => ({
   settings: DEFAULT_SETTINGS,
   loaded: false,
   appInfo: null,
-  secrets: { anthropic: false, deepgram: false, assemblyai: false },
+  secrets: { anthropic: false, deepgram: false, assemblyai: false, openai_compat: false },
   secretBackend: 'keychain',
   load: async () => {
     // Render as soon as settings are known; keychain reads can be slow or show an OS prompt.

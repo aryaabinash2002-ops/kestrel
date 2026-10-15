@@ -6,7 +6,19 @@ export type TranscriberProvider = 'deepgram' | 'assemblyai';
 /** How the THEM channel is captured. */
 export type SystemAudioMode = 'auto' | 'extension' | 'loopback' | 'device';
 
-export type SecretKey = 'anthropic' | 'deepgram' | 'assemblyai';
+export type SecretKey = 'anthropic' | 'deepgram' | 'assemblyai' | 'openai_compat';
+export const SECRET_KEYS: SecretKey[] = ['anthropic', 'deepgram', 'assemblyai', 'openai_compat'];
+
+/** Which API answers, classification, reviews and scoring go through. */
+export type LLMProvider = 'anthropic' | 'openai_compatible';
+
+export interface LLMConfig {
+  provider: LLMProvider;
+  /** OpenAI-compatible base URL (NVIDIA NIM, Groq, OpenRouter, Ollama, vLLM…), e.g. https://integrate.api.nvidia.com/v1 */
+  baseUrl: string;
+  /** Model id sent to the OpenAI-compatible endpoint (used for every request when that provider is active). */
+  model: string;
+}
 
 export type HotkeyName =
   'toggleListening' | 'answerNow' | 'screenshotSolve' | 'togglePanel' | 'clearCards';
@@ -28,6 +40,8 @@ export interface Settings {
   consentAcknowledged: boolean;
   transcriber: TranscriberProvider;
   transcriptionLanguage: string;
+  /** Provider switch; `models` below only applies to Anthropic. */
+  llm: LLMConfig;
   models: {
     /** Fast model on the live path. */
     live: string;
@@ -88,6 +102,11 @@ export const DEFAULT_SETTINGS: Settings = {
   consentAcknowledged: false,
   transcriber: 'deepgram',
   transcriptionLanguage: 'multi',
+  llm: {
+    provider: 'anthropic',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    model: 'nvidia/nemotron-3.5-lightning-30b-a3b',
+  },
   models: {
     live: 'claude-haiku-4-5-20251001',
     heavy: 'claude-sonnet-5',

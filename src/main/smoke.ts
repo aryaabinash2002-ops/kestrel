@@ -44,6 +44,7 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
     ['KESTREL_SMOKE_SET_ANTHROPIC', 'anthropic'],
     ['KESTREL_SMOKE_SET_DEEPGRAM', 'deepgram'],
     ['KESTREL_SMOKE_SET_ASSEMBLYAI', 'assemblyai'],
+    ['KESTREL_SMOKE_SET_OPENAI_COMPAT', 'openai_compat'],
   ] as const) {
     const v = process.env[env];
     if (v) void ctx.secrets.set(key, v).then(() => log.info(`stored ${key} key from env`));

@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { SecretStore } from '../secrets';
+import type { LLMConfig } from '@shared/types/settings';
+import { chatComplete, chatStream, toChatMessages, type CompatConfig } from './openaiCompat';
 import { logger } from '../logger';
 
 const log = logger.scope('llm');
@@ -49,7 +51,29 @@ export class LLMService {
   private client: Anthropic | null = null;
   private keyUsed: string | null = null;
 
-  constructor(private secrets: SecretStore) {}
+  constructor(
+    private secrets: SecretStore,
+    private getConfig: () => LLMConfig = () => ({
+      provider: 'anthropic',
+      baseUrl: '',
+      model: '',
+    }),
+  ) {}
+
+  /** True when answers go through an OpenAI-compatible endpoint instead of Anthropic. */
+  usesCompat(): boolean {
+    return this.getConfig().provider === 'openai_compatible';
+  }
+
+  private async compat(): Promise<CompatConfig> {
+    const cfg = this.getConfig();
+    const apiKey = await this.secrets.get('openai_compat');
+    if (!apiKey) throw new Error('No provider API key. Add it in Settings → Keys.');
+    if (!/^https?:\/\//.test(cfg.baseUrl))
+      throw new Error('Provider base URL is not set (Settings → Models).');
+    if (!cfg.model.trim()) throw new Error('Provider model is not set (Settings → Models).');
+    return { baseUrl: cfg.baseUrl, apiKey, model: cfg.model.trim() };
+  }
 
   async getClient(): Promise<Anthropic> {
     let key = await this.secrets.get('anthropic');
@@ -79,6 +103,20 @@ export class LLMService {
     model: string,
     system: Anthropic.TextBlockParam[],
   ): Promise<{ cacheWrite: number; cacheRead: number } | null> {
+    if (this.usesCompat()) {
+      try {
+        const cfg = await this.compat();
+        const t0 = Date.now();
+        await chatComplete(cfg, {
+          messages: toChatMessages(system, [{ role: 'user', content: 'ok' }]),
+          maxTokens: 1,
+        });
+        log.info(`warm-up ${cfg.model} (${cfg.baseUrl}) in ${Date.now() - t0} ms`);
+      } catch (err) {
+        log.warn('warm-up failed', err);
+      }
+      return null;
+    }
     try {
       const tc = Date.now();
       const client = await this.getClient();
@@ -104,6 +142,32 @@ export class LLMService {
   }
 
   async stream(req: StreamRequest): Promise<StreamResult> {
+    if (this.usesCompat()) {
+      const cfg = await this.compat();
+      let full = '';
+      let first = true;
+      const r = await chatStream(cfg, {
+        messages: toChatMessages(req.system, req.messages),
+        maxTokens: req.maxTokens,
+        temperature: req.temperature,
+        think: !!req.think && !req.fast,
+        signal: req.signal,
+        onDelta: (delta) => {
+          if (first) {
+            first = false;
+            req.onFirstToken?.(Date.now());
+          }
+          full += delta;
+          req.onText(delta, full);
+        },
+      });
+      return {
+        text: full,
+        stopReason: r.finishReason,
+        usage: { input: r.usage.input, output: r.usage.output, cacheRead: 0, cacheWrite: 0 },
+        model: cfg.model,
+      };
+    }
     const client = await this.getClient();
     const params: Anthropic.MessageCreateParamsStreaming = {
       model: req.model,
@@ -154,6 +218,21 @@ export class LLMService {
    * when the model accepts them, falling back to parsing the first JSON object in text.
    */
   async json<T>(req: JsonRequest): Promise<T> {
+    if (this.usesCompat()) {
+      const cfg = await this.compat();
+      const text = await chatComplete(cfg, {
+        messages: toChatMessages(
+          `${req.system}\n\nRespond with a single JSON object only (no prose, no code fence), matching this JSON schema: ${JSON.stringify(req.schema)}`,
+          [{ role: 'user', content: req.user }],
+        ),
+        maxTokens: req.maxTokens ?? 1024,
+        temperature: 0,
+        signal: req.signal,
+      });
+      const m = text.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('No JSON in model response');
+      return JSON.parse(m[0]) as T;
+    }
     const client = await this.getClient();
     const base = {
       model: req.model,

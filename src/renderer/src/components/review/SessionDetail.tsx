@@ -44,7 +44,9 @@ export function SessionDetail({
   const generate = useReview((s) => s.generate);
   const exportSession = useReview((s) => s.exportSession);
   const autoTried = useReview((s) => s.autoTried);
-  const hasAnthropic = useSettings((s) => s.secrets.anthropic);
+  const hasAnthropic = useSettings((s) =>
+    s.settings.llm.provider === 'anthropic' ? s.secrets.anthropic : s.secrets.openai_compat,
+  );
   const [tab, setTab] = useState('summary');
   const summary = session.summary;
   const finals = utterances.filter((u) => u.isFinal);

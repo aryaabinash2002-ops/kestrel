@@ -18,16 +18,23 @@ export function registerAnswerHandlers(ctx: AppContext): void {
   ctx.hotkeys.on('clearCards', () => engine.clear());
 
   ctx.settings.onChange((next, prev) => {
-    if (JSON.stringify(next.models) !== JSON.stringify(prev.models)) void engine.warm();
+    if (
+      JSON.stringify(next.models) !== JSON.stringify(prev.models) ||
+      JSON.stringify(next.llm) !== JSON.stringify(prev.llm)
+    )
+      void engine.warm();
   });
 
   // Re-create the Anthropic client when the key changes.
   const origSet = ctx.secrets.set.bind(ctx.secrets);
   ctx.secrets.set = async (key, value) => {
     await origSet(key, value);
-    if (key === 'anthropic') {
+    if (key === 'anthropic' || key === 'openai_compat') {
       ctx.llm.invalidate();
-      emit('toast', { kind: 'info', title: 'Anthropic key updated' });
+      emit('toast', {
+        kind: 'info',
+        title: key === 'anthropic' ? 'Anthropic key updated' : 'Provider key updated',
+      });
     }
   };
 }

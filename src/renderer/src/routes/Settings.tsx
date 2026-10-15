@@ -182,6 +182,12 @@ export default function Settings() {
                   testable
                 />
                 <SecretField
+                  id="openai_compat"
+                  label="OpenAI-compatible provider key"
+                  hint="Used when the answer provider below is set to OpenAI-compatible (NVIDIA NIM nvapi-…, Groq, OpenRouter, Ollama…)."
+                  testable
+                />
+                <SecretField
                   id="deepgram"
                   label="Deepgram API key"
                   hint="console.deepgram.com. Default streaming transcription provider."
@@ -204,29 +210,77 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
-                  <Label>Live answers (fast)</Label>
+                  <Label>Answer provider</Label>
                   <Select
-                    options={MODEL_OPTIONS}
-                    value={settings.models.live}
-                    onValueChange={(v) => void update({ models: { live: v } })}
+                    options={[
+                      { value: 'anthropic', label: 'Anthropic (Claude) — recommended' },
+                      {
+                        value: 'openai_compatible',
+                        label: 'OpenAI-compatible endpoint (NVIDIA NIM, Groq, OpenRouter, Ollama…)',
+                      },
+                    ]}
+                    value={settings.llm.provider}
+                    onValueChange={(v) =>
+                      void update({ llm: { provider: v as 'anthropic' | 'openai_compatible' } })
+                    }
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    Screenshot solving needs a vision-capable model; text-only endpoints will reject
+                    it. Prompt caching and thinking control are Anthropic-only.
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <Label>Screenshots, coding &amp; review (strong)</Label>
-                  <Select
-                    options={MODEL_OPTIONS}
-                    value={settings.models.heavy}
-                    onValueChange={(v) => void update({ models: { heavy: v } })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Question classifier &amp; summaries</Label>
-                  <Select
-                    options={MODEL_OPTIONS}
-                    value={settings.models.classifier}
-                    onValueChange={(v) => void update({ models: { classifier: v } })}
-                  />
-                </div>
+                {settings.llm.provider === 'openai_compatible' && (
+                  <>
+                    <div className="space-y-1">
+                      <Label htmlFor="llm-base-url">Base URL</Label>
+                      <Input
+                        id="llm-base-url"
+                        value={settings.llm.baseUrl}
+                        placeholder="https://integrate.api.nvidia.com/v1"
+                        onChange={(e) => void update({ llm: { baseUrl: e.target.value.trim() } })}
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="llm-model">Model id (used for every request)</Label>
+                      <Input
+                        id="llm-model"
+                        value={settings.llm.model}
+                        placeholder="nvidia/nemotron-3.5-lightning-30b-a3b"
+                        onChange={(e) => void update({ llm: { model: e.target.value.trim() } })}
+                        spellCheck={false}
+                      />
+                    </div>
+                  </>
+                )}
+                {settings.llm.provider === 'anthropic' && (
+                  <>
+                    <div className="space-y-1">
+                      <Label>Live answers (fast)</Label>
+                      <Select
+                        options={MODEL_OPTIONS}
+                        value={settings.models.live}
+                        onValueChange={(v) => void update({ models: { live: v } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Screenshots, coding &amp; review (strong)</Label>
+                      <Select
+                        options={MODEL_OPTIONS}
+                        value={settings.models.heavy}
+                        onValueChange={(v) => void update({ models: { heavy: v } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Question classifier &amp; summaries</Label>
+                      <Select
+                        options={MODEL_OPTIONS}
+                        value={settings.models.classifier}
+                        onValueChange={(v) => void update({ models: { classifier: v } })}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-1">
                   <Label>Transcription provider</Label>
                   <Select

@@ -21,7 +21,9 @@ export function PracticeSetup() {
   const profiles = useProfiles((s) => s.profiles);
   const loadProfiles = useProfiles((s) => s.load);
   const lastProfileId = useSettings((s) => s.settings.lastProfileId);
-  const hasAnthropic = useSettings((s) => s.secrets.anthropic);
+  const hasAnthropic = useSettings((s) =>
+    s.settings.llm.provider === 'anthropic' ? s.secrets.anthropic : s.secrets.openai_compat,
+  );
   const sets = usePractice((s) => s.sets);
   const loadSets = usePractice((s) => s.loadSets);
   const start = usePractice((s) => s.start);
@@ -112,7 +114,7 @@ export function PracticeSetup() {
         </div>
         {!hasAnthropic && (
           <p className="text-[11px] text-warning">
-            No Anthropic API key stored — scoring and role-specific questions need one (Settings →
+            No AI provider key stored — scoring and role-specific questions need one (Settings →
             Keys).
           </p>
         )}

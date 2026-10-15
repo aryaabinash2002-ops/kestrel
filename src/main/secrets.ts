@@ -1,6 +1,6 @@
 import { safeStorage } from 'electron';
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import type { SecretKey } from '@shared/types/settings';
+import { SECRET_KEYS, type SecretKey } from '@shared/types/settings';
 import { logger } from './logger';
 
 const log = logger.scope('secrets');
@@ -79,9 +79,7 @@ export class SecretStore {
 
   /** Read all keys once at startup so the first LLM/STT request never waits on the keychain. */
   async preload(): Promise<void> {
-    await Promise.all(
-      (['anthropic', 'deepgram', 'assemblyai'] as SecretKey[]).map((k) => this.get(k)),
-    );
+    await Promise.all(SECRET_KEYS.map((k) => this.get(k)));
   }
 
   async set(key: SecretKey, value: string): Promise<void> {
@@ -117,11 +115,12 @@ export class SecretStore {
       anthropic: await this.has('anthropic'),
       deepgram: await this.has('deepgram'),
       assemblyai: await this.has('assemblyai'),
+      openai_compat: await this.has('openai_compat'),
     };
   }
 
   async clearAll(): Promise<void> {
-    for (const k of ['anthropic', 'deepgram', 'assemblyai'] as SecretKey[]) await this.delete(k);
+    for (const k of SECRET_KEYS) await this.delete(k);
     if (existsSync(this.fallbackFile)) unlinkSync(this.fallbackFile);
   }
 

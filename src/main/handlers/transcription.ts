@@ -1,9 +1,15 @@
 import type { AppContext } from '../context';
 import { handle } from '../ipc';
 import type { SecretKey } from '@shared/types/settings';
+import { testCompat } from '../llm/openaiCompat';
 
-async function testKey(key: SecretKey, value: string): Promise<{ ok: boolean; message: string }> {
+async function testKey(
+  key: SecretKey,
+  value: string,
+  compatBaseUrl: string,
+): Promise<{ ok: boolean; message: string }> {
   try {
+    if (key === 'openai_compat') return await testCompat(compatBaseUrl, value);
     if (key === 'deepgram') {
       const res = await fetch('https://api.deepgram.com/v1/projects', {
         headers: { Authorization: `Token ${value}` },
@@ -36,6 +42,6 @@ export function registerTranscriptionHandlers(ctx: AppContext): void {
   handle('secrets:test', async (_e, key) => {
     const value = await ctx.secrets.get(key);
     if (!value) return { ok: false, message: 'No key stored' };
-    return testKey(key, value);
+    return testKey(key, value, ctx.settings.get().llm.baseUrl);
   });
 }

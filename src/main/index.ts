@@ -85,7 +85,7 @@ async function boot(): Promise<void> {
     appVersion: app.getVersion(),
     isSessionActive: () => !!sessions.session,
   });
-  const llm = new LLMService(secrets);
+  const llm = new LLMService(secrets, () => settings.get().llm);
   const answers = new AnswerEngine({ llm, sessions, db, getSettings: () => settings.get() });
   const auto = new AutoAnswer(
     transcription,
