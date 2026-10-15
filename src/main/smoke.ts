@@ -77,7 +77,8 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
           const demo = ctx.db
             .listProfiles()
             .find((p) => p.name.toLowerCase().includes(wanted.toLowerCase()));
-          ctx.sessions.start(demo?.id ?? null, 'live');
+          const demoProfileId = demo?.id ?? null;
+          ctx.sessions.start(demoProfileId, 'live');
           await ctx.audio.start().catch((err) => (summary['audioError'] = String(err)));
           ctx.sessions.setListening(true);
           await new Promise((r) =>
@@ -87,22 +88,31 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
             // Inject a question from THEM and trigger "Answer now" (needs an LLM endpoint).
             const sid = ctx.sessions.session?.id ?? '';
             const nowMs = ctx.sessions.nowMs();
-            ctx.sessions.pushUtterance({
-              id: 'smoke_q',
-              sessionId: sid,
-              speaker: 'THEM',
-              text:
-                process.env['KESTREL_SMOKE_QUESTION'] ??
-                'Can you tell me about a time you led a difficult migration?',
-              startMs: nowMs - 3000,
-              endMs: nowMs - 200,
-              isFinal: true,
-              source: 'stt',
-            });
+            const smokeQuestion =
+              process.env['KESTREL_SMOKE_QUESTION'] ??
+              'Can you tell me about a time you led a difficult migration?';
+            if (process.env['KESTREL_SMOKE_AUTO']) {
+              // Feed the real pipeline (TranscriptionService → QuestionDetector → AutoAnswer → Classifier).
+              ctx.transcription.pushExternalUtterance('THEM', smokeQuestion, undefined, false);
+              await new Promise((r) => setTimeout(r, 250));
+              ctx.transcription.pushExternalUtterance('THEM', smokeQuestion, undefined, true);
+            } else {
+              ctx.sessions.pushUtterance({
+                id: 'smoke_q',
+                sessionId: sid,
+                speaker: 'THEM',
+                text: smokeQuestion,
+                startMs: nowMs - 3000,
+                endMs: nowMs - 200,
+                isFinal: true,
+                source: 'stt',
+              });
+            }
             await new Promise((r) =>
               setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_WAIT_MS'] ?? 0)),
             );
-            ctx.answers.answerNow();
+            // KESTREL_SMOKE_AUTO=1: let AutoAnswer + Classifier react to the utterance instead of forcing it.
+            if (!process.env['KESTREL_SMOKE_AUTO']) ctx.answers.answerNow();
             await new Promise((r) =>
               setTimeout(r, Number(process.env['KESTREL_SMOKE_ANSWER_MS'] ?? 4000)),
             );
@@ -155,8 +165,8 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
           if (process.env['KESTREL_SMOKE_PRACTICE']) {
             try {
               const st = await ctx.practice.start({
-                profileId: null,
-                setId: 'behavioral',
+                profileId: demoProfileId,
+                setId: (process.env['KESTREL_SMOKE_PRACTICE_SET'] ?? 'behavioral') as never,
                 count: 1,
                 useTts: false,
               });
@@ -168,7 +178,14 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
               );
               for (let i = 0; i < 60 && ctx.db.listPracticeScores(sid).length === 0; i++)
                 await new Promise((r) => setTimeout(r, 250));
-              summary['practice'] = { ms: Date.now() - t0, scores: ctx.db.listPracticeScores(sid) };
+              summary['practice'] = {
+                ms: Date.now() - t0,
+                questions:
+                  (
+                    ctx.practice as unknown as { run?: { questions?: Array<{ question: string }> } }
+                  ).run?.questions?.map((q) => q.question) ?? null,
+                scores: ctx.db.listPracticeScores(sid),
+              };
               await ctx.practice.stop();
             } catch (err) {
               summary['practiceError'] = String(err);

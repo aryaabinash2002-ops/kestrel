@@ -42,6 +42,24 @@ function modelSupportsEffort(model: string): boolean {
   return !/haiku/.test(model);
 }
 
+/** Turn raw endpoint errors into something a user can act on. */
+function compatError(err: unknown, hasImage: boolean): Error {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/^404\b/.test(msg))
+    return new Error(
+      `Provider returned 404 — the base URL or model id is wrong (Settings → Models). ${msg}`,
+    );
+  if (/^401\b|^403\b/.test(msg))
+    return new Error(`Provider rejected the API key (Settings → Keys). ${msg}`);
+  if (/^429\b/.test(msg))
+    return new Error(`Provider rate limit hit — wait a few seconds and press Answer now. ${msg}`);
+  if (hasImage && /^400\b|image|multimodal|vision|empty response/i.test(msg))
+    return new Error(
+      `This provider/model cannot read screenshots — switch the answer provider to Anthropic (Settings → Models) for screenshot solve. ${msg}`,
+    );
+  return err instanceof Error ? err : new Error(msg);
+}
+
 /**
  * One Anthropic client for the whole app, created once. The SDK's fetch transport keeps
  * connections alive, and `warm()` opens one at session start. All calls stream;
@@ -144,23 +162,35 @@ export class LLMService {
   async stream(req: StreamRequest): Promise<StreamResult> {
     if (this.usesCompat()) {
       const cfg = await this.compat();
+      const hasImage = req.messages.some(
+        (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image'),
+      );
       let full = '';
       let first = true;
-      const r = await chatStream(cfg, {
-        messages: toChatMessages(req.system, req.messages),
-        maxTokens: req.maxTokens,
-        temperature: req.temperature,
-        think: !!req.think && !req.fast,
-        signal: req.signal,
-        onDelta: (delta) => {
-          if (first) {
-            first = false;
-            req.onFirstToken?.(Date.now());
-          }
-          full += delta;
-          req.onText(delta, full);
-        },
-      });
+      let r;
+      try {
+        r = await chatStream(cfg, {
+          messages: toChatMessages(req.system, req.messages),
+          maxTokens: req.maxTokens,
+          temperature: req.temperature,
+          think: !!req.think && !req.fast,
+          signal: req.signal,
+          onDelta: (delta) => {
+            if (first) {
+              first = false;
+              req.onFirstToken?.(Date.now());
+            }
+            full += delta;
+            req.onText(delta, full);
+          },
+        });
+      } catch (err) {
+        throw compatError(err, hasImage);
+      }
+      if (hasImage && !full.trim())
+        throw new Error(
+          `${cfg.model} returned nothing for an image. This provider/model cannot read screenshots — switch the answer provider to Anthropic (Settings → Models) for screenshot solve.`,
+        );
       return {
         text: full,
         stopReason: r.finishReason,
@@ -220,15 +250,20 @@ export class LLMService {
   async json<T>(req: JsonRequest): Promise<T> {
     if (this.usesCompat()) {
       const cfg = await this.compat();
-      const text = await chatComplete(cfg, {
-        messages: toChatMessages(
-          `${req.system}\n\nRespond with a single JSON object only (no prose, no code fence), matching this JSON schema: ${JSON.stringify(req.schema)}`,
-          [{ role: 'user', content: req.user }],
-        ),
-        maxTokens: req.maxTokens ?? 1024,
-        temperature: 0,
-        signal: req.signal,
-      });
+      let text: string;
+      try {
+        text = await chatComplete(cfg, {
+          messages: toChatMessages(
+            `${req.system}\n\nRespond with a single JSON object only (no prose, no code fence), matching this JSON schema: ${JSON.stringify(req.schema)}`,
+            [{ role: 'user', content: req.user }],
+          ),
+          maxTokens: req.maxTokens ?? 1024,
+          temperature: 0,
+          signal: req.signal,
+        });
+      } catch (err) {
+        throw compatError(err, false);
+      }
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) throw new Error('No JSON in model response');
       return JSON.parse(m[0]) as T;

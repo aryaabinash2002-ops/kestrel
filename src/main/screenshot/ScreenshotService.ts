@@ -248,6 +248,8 @@ export class ScreenshotService {
       if (controller.signal.aborted) return;
       const message = err instanceof Error ? err.message : String(err);
       result.status = 'error';
+      result.result = message;
+      this.deps.db.saveScreenshot(result);
       emit('screenshot:event', { type: 'error', id, error: message });
       log.warn('screenshot solve failed', message);
     } finally {

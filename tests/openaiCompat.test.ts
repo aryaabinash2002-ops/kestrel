@@ -33,7 +33,8 @@ beforeAll(async () => {
       if (stallFirst > 0) {
         stallFirst--;
         res.writeHead(200, { 'content-type': 'text/event-stream' });
-        req.on('close', () => res.end());
+        res.flushHeaders();
+        res.on('close', () => res.end()); // (req 'close' fires once the body is read — not what we want)
         return; // never writes a token until the client aborts
       }
       if (req.headers.authorization !== 'Bearer good') {
@@ -188,6 +189,26 @@ describe('openaiCompat', () => {
       { messages: [{ role: 'user', content: 'q' }], maxTokens: 5 },
     );
     expect(text).toContain('behavioral');
+  });
+
+  it('aborting the caller signal rejects and stops deltas (hedge included)', async () => {
+    stallFirst = 2; // both attempts hang → only the abort can end it
+    const ac = new AbortController();
+    const deltas: string[] = [];
+    const p = chatStream(
+      { baseUrl, apiKey: 'good', model: 'm' },
+      {
+        messages: [{ role: 'user', content: 'q' }],
+        maxTokens: 50,
+        hedgeAfterMs: 50,
+        signal: ac.signal,
+        onDelta: (d) => deltas.push(d),
+      },
+    );
+    setTimeout(() => ac.abort(new Error('restart')), 200);
+    await expect(p).rejects.toThrow('restart');
+    expect(deltas).toEqual([]);
+    stallFirst = 0;
   });
 
   it('fails clearly without a key', async () => {
