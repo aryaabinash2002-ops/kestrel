@@ -2,9 +2,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { SecretStore } from '../secrets';
 import type { LLMConfig } from '@shared/types/settings';
 import { chatComplete, chatStream, toChatMessages, type CompatConfig } from './openaiCompat';
+import { hedged } from './hedge';
 import { logger } from '../logger';
 
 const log = logger.scope('llm');
+/** Live-path hedge delay (ms); KESTREL_HEDGE_MS overrides for tests/tuning. */
+const HEDGE_MS = Number(process.env['KESTREL_HEDGE_MS'] ?? 2000);
 
 export interface StreamRequest {
   model: string;
@@ -215,18 +218,36 @@ export class LLMService {
       params.thinking = { type: 'adaptive', display: 'summarized' };
       params.output_config = { effort: 'medium' };
     }
-    const stream = client.messages.stream(params, { signal: req.signal });
     let full = '';
     let first = true;
-    stream.on('text', (delta) => {
+    const onDelta = (delta: string) => {
       if (first) {
         first = false;
         req.onFirstToken?.(Date.now());
       }
       full += delta;
       req.onText(delta, full);
-    });
-    const final = await stream.finalMessage();
+    };
+    const once = async (signal: AbortSignal, emit: (d: string) => void) => {
+      const stream = client.messages.stream(params, { signal });
+      stream.on('text', emit);
+      return stream.finalMessage();
+    };
+    // Live path: if Anthropic has not produced a token after HEDGE_MS, race a second identical
+    // request (cheap: the prefix is cached) and keep whichever streams first.
+    const final = req.fast
+      ? await hedged(once, {
+          hedgeAfterMs: HEDGE_MS,
+          maxAttempts: 2,
+          signal: req.signal,
+          onDelta,
+          retryDelayMs: (err) => {
+            const status = (err as { status?: number }).status;
+            return status === 429 || (status !== undefined && status >= 500) ? 300 : null;
+          },
+          isEmpty: (m) => !m.content.some((b) => b.type === 'text' && b.text),
+        })
+      : await once(req.signal ?? new AbortController().signal, onDelta);
     if (final.stop_reason === 'refusal') {
       throw new Error('The model declined to answer this request.');
     }

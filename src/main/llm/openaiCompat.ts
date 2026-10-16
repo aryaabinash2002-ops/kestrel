@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import { hedged } from './hedge';
 
 /**
  * Minimal OpenAI-compatible chat client (NVIDIA NIM, Groq, OpenRouter, Ollama, vLLM, …).
@@ -161,85 +162,15 @@ async function chatStreamOnce(cfg: CompatConfig, a: CompatStreamArgs): Promise<C
   return { text, finishReason: finish, usage };
 }
 
-/**
- * Hedged stream: free/shared endpoints occasionally stall for many seconds before the first
- * byte. After `hedgeAfterMs` without a token a second identical request starts; the first one
- * to produce a token wins and the other is aborted. Failures before any token are retried
- * (up to 3 attempts in total, short pause on 429/5xx).
- */
+/** Hedged stream (see hedge.ts): second request after `hedgeAfterMs` without a token, retry on 429/5xx. */
 export function chatStream(cfg: CompatConfig, a: CompatStreamArgs): Promise<CompatResult> {
-  const hedgeAfter = a.hedgeAfterMs ?? 1800;
-  const MAX_ATTEMPTS = 3;
-  return new Promise<CompatResult>((resolve, reject) => {
-    let winner = -1;
-    let attempts = 0;
-    let running = 0;
-    let lastErr: unknown = null;
-    let settled = false;
-    const controllers: AbortController[] = [];
-    let hedgeTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      if (hedgeTimer) clearTimeout(hedgeTimer);
-      for (const c of controllers) c.abort();
-      fn();
-    };
-    a.signal?.addEventListener('abort', () =>
-      finish(() => reject(a.signal?.reason ?? new Error('aborted'))),
-    );
-
-    const launch = () => {
-      if (settled || attempts >= MAX_ATTEMPTS) return;
-      const idx = attempts++;
-      running++;
-      const ac = new AbortController();
-      controllers.push(ac);
-      chatStreamOnce(cfg, {
-        ...a,
-        signal: ac.signal,
-        onDelta: (d) => {
-          if (settled) return;
-          if (winner === -1) {
-            winner = idx;
-            if (hedgeTimer) clearTimeout(hedgeTimer);
-            controllers.forEach((c, i) => i !== idx && c.abort());
-          }
-          if (winner === idx) a.onDelta(d);
-        },
-      }).then(
-        (res) => {
-          if (winner === idx || (winner === -1 && res.text)) finish(() => resolve(res));
-          else if (winner === -1) {
-            // Empty stream without a token: treat as a failure of this attempt.
-            running--;
-            lastErr = new Error('empty response');
-            if (running === 0) scheduleRetry(0);
-          }
-        },
-        (err) => {
-          if (settled || winner === idx) return;
-          running--;
-          if (winner !== -1) return; // a loser being aborted
-          lastErr = err;
-          if (attempts >= MAX_ATTEMPTS && running === 0) finish(() => reject(err));
-          else if (running === 0)
-            scheduleRetry(RETRYABLE.test(String((err as Error).message)) ? 400 : 0);
-        },
-      );
-      if (idx === 0 && hedgeAfter > 0)
-        hedgeTimer = setTimeout(() => winner === -1 && launch(), hedgeAfter);
-    };
-    const scheduleRetry = (delay: number) => {
-      if (settled) return;
-      if (attempts >= MAX_ATTEMPTS) {
-        finish(() => reject(lastErr instanceof Error ? lastErr : new Error(String(lastErr))));
-        return;
-      }
-      setTimeout(launch, delay);
-    };
-    launch();
+  return hedged((signal, onDelta) => chatStreamOnce(cfg, { ...a, signal, onDelta }), {
+    hedgeAfterMs: a.hedgeAfterMs ?? 1800,
+    maxAttempts: 3,
+    signal: a.signal,
+    onDelta: a.onDelta,
+    retryDelayMs: (err) => (RETRYABLE.test(String((err as Error).message)) ? 400 : 0),
+    isEmpty: (r) => !r.text,
   });
 }
 

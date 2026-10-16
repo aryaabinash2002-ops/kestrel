@@ -32,6 +32,8 @@ const KEEP_IF_PROGRESS = 0.7;
 const TYPICAL_ANSWER_CHARS = 700;
 const LIVE_MAX_TOKENS = 350;
 const SUMMARY_INTERVAL_MS = 5 * 60 * 1000;
+/** Anthropic prompt-cache TTL is 5 min; re-warm every 4 min of silence so the next answer still hits the cache. */
+const CACHE_KEEPALIVE_MS = 4 * 60 * 1000;
 
 export interface AnswerRequest {
   question: string;
@@ -77,6 +79,9 @@ export class AnswerEngine extends EventEmitter {
   private summary: string | null = null;
   private summarizedUntilMs = 0;
   private summaryTimer: NodeJS.Timeout | null = null;
+  /** Re-warms the prompt cache before its 5-minute TTL lapses during quiet stretches. */
+  private keepAliveTimer: NodeJS.Timeout | null = null;
+  private lastRequestAt = 0;
   private lastAutoAt = 0;
   private lastAutoQuestion = '';
   private profileCtx: ContextProfile | null = null;
@@ -103,6 +108,10 @@ export class AnswerEngine extends EventEmitter {
     void this.warm();
     if (this.summaryTimer) clearInterval(this.summaryTimer);
     this.summaryTimer = setInterval(() => void this.updateSummary(), SUMMARY_INTERVAL_MS);
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = setInterval(() => {
+      if (Date.now() - this.lastRequestAt > CACHE_KEEPALIVE_MS - 5_000) void this.warm();
+    }, CACHE_KEEPALIVE_MS);
   }
 
   private onSessionEnd(): void {
@@ -110,6 +119,8 @@ export class AnswerEngine extends EventEmitter {
     this.queued = null;
     if (this.summaryTimer) clearInterval(this.summaryTimer);
     this.summaryTimer = null;
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = null;
   }
 
   private template(): string {
@@ -128,6 +139,7 @@ export class AnswerEngine extends EventEmitter {
     log.info(
       `prefix ≈${prefixTokens} tokens, cache ${cached ? 'on' : `off (min ${cacheMinimum} for ${s.models.live})`}`,
     );
+    this.lastRequestAt = Date.now();
     await this.deps.llm.warm(
       s.models.live,
       cached
@@ -342,6 +354,7 @@ export class AnswerEngine extends EventEmitter {
     const prompt = req.chat
       ? this.buildChatPrompt(req.question, model)
       : this.buildLive(req.question, model);
+    this.lastRequestAt = Date.now();
     try {
       const result = await this.deps.llm.stream({
         model,
