@@ -152,7 +152,7 @@ export function buildLivePrompt(a: BuildArgs): BuiltPrompt {
   parts.push(`Question: ${a.question.trim()}`);
   // The hard budget goes last: models weight the end of the user turn most.
   parts.push(
-    'Reply as one short spoken paragraph: HEADLINE (one sentence, max 14 words) then POINTS with 2 or 3 sentences of max 12 words each. Whole reply at most 50 words. Stop after the third sentence.',
+    'Reply as one short spoken paragraph: HEADLINE (one sentence, max 14 words) then POINTS with 2 or 3 sentences of max 12 words each. Whole reply at most 50 words. Stop after the third sentence. If the question needs working out, the HEADLINE must state the final answer and the sentences show why.',
   );
   return { system, user: parts.join('\n\n'), cached, prefixTokens, cacheMinimum };
 }

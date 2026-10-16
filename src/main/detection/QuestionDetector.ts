@@ -212,8 +212,8 @@ export class QuestionDetector extends EventEmitter {
 
   constructor(opts: DetectorOptions = {}) {
     super();
-    this.stableMs = opts.stableMs ?? 200;
-    this.stableMsIncomplete = opts.stableMsIncomplete ?? 600;
+    this.stableMs = opts.stableMs ?? 120;
+    this.stableMsIncomplete = opts.stableMsIncomplete ?? 400;
     this.sameThreshold = opts.sameThreshold ?? 0.8;
     this.stillSpeaking = opts.stillSpeaking ?? (() => false);
     this.mergeWindowMs = opts.mergeWindowMs ?? 1500;
