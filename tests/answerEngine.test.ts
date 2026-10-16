@@ -100,7 +100,7 @@ describe('AnswerEngine', () => {
     // Request shape: fast path, strict format, system prefix present, live model.
     const req = fake.requests.find((r) => r.body.stream)!;
     expect(req.body.model).toBe(DEFAULT_SETTINGS.models.live);
-    expect(req.body.max_tokens).toBe(350);
+    expect(req.body.max_tokens).toBe(220);
     expect(Array.isArray(req.body.system) && req.body.system[0]!.text).toContain('HEADLINE');
     expect(JSON.stringify(req.body.messages)).toContain(
       'Question: Tell me about a time you led a migration?',

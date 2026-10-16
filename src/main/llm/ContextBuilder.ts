@@ -68,7 +68,7 @@ export function profileToContext(
 }
 
 const LENGTH_WORDS: Record<AnswerLength, string> = {
-  short: 'short (headline + 3 points, each under 12 words)',
+  short: 'short (headline under 14 words + 2 or 3 cues under 10 words; about 20 seconds spoken)',
   medium: 'medium (headline + 4 points)',
   detailed: 'detailed (headline + 5 points, each may include one concrete number or name)',
 };
