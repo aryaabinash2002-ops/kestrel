@@ -1,6 +1,7 @@
 /**
  * Content script for call web clients (Meet, Zoom, Teams, Webex): detects call start/end
  * and, on Google Meet with built-in captions on, forwards caption text + speaker names.
+ * Runs in every frame (all_frames): Zoom's web client renders the meeting inside an iframe.
  */
 import type { ExtMessage } from '../protocol';
 import { SELECTORS, query, queryAll } from './meetSelectors';
@@ -21,7 +22,7 @@ function leaveButtonByText(): boolean {
     const t = (b.textContent ?? '').trim();
     if (
       (t === 'Leave' || t === 'End' || t === 'Leave meeting' || t === 'End meeting') &&
-      b.offsetParent
+      b.getClientRects().length > 0
     )
       return true;
   }

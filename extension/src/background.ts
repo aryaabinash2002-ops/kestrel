@@ -252,7 +252,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     for (const t of tabs) {
       if (t.id)
         await chrome.scripting
-          .executeScript({ target: { tabId: t.id }, files: ['content.js'] })
+          .executeScript({ target: { tabId: t.id, allFrames: true }, files: ['content.js'] })
           .catch(() => undefined);
     }
   } catch {
