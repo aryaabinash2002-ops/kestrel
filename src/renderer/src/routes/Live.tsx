@@ -230,7 +230,7 @@ export default function Live() {
           <div
             className={cn(
               'shrink-0 border-t border-border/70 bg-card/40',
-              transcriptOpen ? 'h-[32%] min-h-[120px]' : 'h-8',
+              transcriptOpen ? 'h-[22%] min-h-[96px]' : 'h-8',
             )}
           >
             <button

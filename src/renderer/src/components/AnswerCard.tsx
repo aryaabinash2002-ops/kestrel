@@ -61,7 +61,7 @@ export function AnswerCard({
         ) : (
           <Sparkles className="size-3.5 text-primary" />
         )}
-        <span className="truncate text-[11px] text-muted-foreground" title={card.question}>
+        <span className="truncate text-[12px] text-muted-foreground" title={card.question}>
           {isChat ? 'You asked: ' : ''}
           {card.question}
         </span>
@@ -109,8 +109,8 @@ export function AnswerCard({
       <div className="px-3 pb-2.5 pt-1 selectable">
         <p
           className={cn(
-            'font-semibold leading-snug',
-            compact ? 'text-[13px]' : 'text-[15px]',
+            'answer-text font-semibold leading-snug text-foreground',
+            compact ? 'text-[14px]' : 'text-[17px]',
             streaming && !card.latency.headlineDoneTs && !card.stale && 'caret',
             card.stale && 'opacity-60',
           )}
@@ -128,8 +128,8 @@ export function AnswerCard({
         {!collapsed && isChat && card.content && (
           <p
             className={cn(
-              'mt-1 whitespace-pre-wrap text-muted-foreground',
-              compact ? 'text-xs' : 'text-[13px]',
+              'answer-text mt-1 whitespace-pre-wrap font-medium text-foreground',
+              compact ? 'text-[13px]' : 'text-[15px]',
               streaming && 'caret',
             )}
           >
@@ -139,8 +139,8 @@ export function AnswerCard({
         {!collapsed && !isChat && paragraph && card.points.length > 0 && (
           <p
             className={cn(
-              'mt-1 leading-snug text-foreground/90',
-              compact ? 'text-xs' : 'text-[13px]',
+              'answer-text mt-1.5 font-medium leading-relaxed text-foreground',
+              compact ? 'text-[13px]' : 'text-[15px]',
               streaming && 'caret',
               card.stale && 'opacity-60',
             )}
@@ -151,8 +151,8 @@ export function AnswerCard({
         {!collapsed && !isChat && !paragraph && card.points.length > 0 && (
           <ul
             className={cn(
-              'mt-1.5 space-y-1 pl-4',
-              compact ? 'text-xs' : 'text-[13px]',
+              'answer-text mt-1.5 space-y-1 pl-4 font-medium text-foreground',
+              compact ? 'text-[13px]' : 'text-[15px]',
               card.stale && 'opacity-60',
             )}
           >
