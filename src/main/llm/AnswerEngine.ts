@@ -30,7 +30,7 @@ const MIN_AUTO_GAP_MS = 2000;
 const KEEP_IF_PROGRESS = 0.7;
 /** Rough size of a complete live answer, used to estimate progress while streaming. */
 const TYPICAL_ANSWER_CHARS = 700;
-const LIVE_MAX_TOKENS = 220;
+const LIVE_MAX_TOKENS = 170;
 const SUMMARY_INTERVAL_MS = 5 * 60 * 1000;
 /** Anthropic prompt-cache TTL is 5 min; re-warm every 4 min of silence so the next answer still hits the cache. */
 const CACHE_KEEPALIVE_MS = 4 * 60 * 1000;

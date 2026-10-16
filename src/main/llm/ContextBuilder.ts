@@ -68,7 +68,8 @@ export function profileToContext(
 }
 
 const LENGTH_WORDS: Record<AnswerLength, string> = {
-  short: 'short (headline under 14 words + 2 or 3 cues under 10 words; about 20 seconds spoken)',
+  short:
+    'short (one spoken paragraph: headline under 14 words + 2 or 3 sentences under 14 words; 35–55 words, about 15 seconds)',
   medium: 'medium (headline + 4 points)',
   detailed: 'detailed (headline + 5 points, each may include one concrete number or name)',
 };
@@ -149,5 +150,9 @@ export function buildLivePrompt(a: BuildArgs): BuiltPrompt {
   if (a.summary) parts.push(`<earlier_summary>\n${a.summary}\n</earlier_summary>`);
   parts.push(`<transcript_recent>\n${transcript || '(nothing yet)'}\n</transcript_recent>`);
   parts.push(`Question: ${a.question.trim()}`);
+  // The hard budget goes last: models weight the end of the user turn most.
+  parts.push(
+    'Reply as one short spoken paragraph: HEADLINE (one sentence, max 14 words) then POINTS with 2 or 3 sentences of max 12 words each. Whole reply at most 50 words. Stop after the third sentence.',
+  );
   return { system, user: parts.join('\n\n'), cached, prefixTokens, cacheMinimum };
 }

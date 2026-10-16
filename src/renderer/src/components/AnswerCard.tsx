@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageSquareText, Sparkles, X, Zap } from 'lucide-react';
 import type { AnswerCard as AnswerCardT } from '@shared/types/session';
 import { cn } from '@renderer/lib/utils';
+import { useSettings } from '@renderer/store/settings';
 
 const TYPE_LABEL: Record<string, string> = {
   behavioral: 'Behavioral',
@@ -31,6 +32,7 @@ export function AnswerCard({
   onDismiss: (id: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(collapsedDefault);
+  const paragraph = useSettings((s) => s.settings.ui.answerStyle !== 'bullets');
   const streaming = card.status === 'streaming';
   const ftl =
     card.latency.firstTokenTs && card.latency.questionEndTs
@@ -134,7 +136,19 @@ export function AnswerCard({
             {card.content.split('\n').slice(1).join('\n').trim()}
           </p>
         )}
-        {!collapsed && !isChat && card.points.length > 0 && (
+        {!collapsed && !isChat && paragraph && card.points.length > 0 && (
+          <p
+            className={cn(
+              'mt-1 leading-snug text-foreground/90',
+              compact ? 'text-xs' : 'text-[13px]',
+              streaming && 'caret',
+              card.stale && 'opacity-60',
+            )}
+          >
+            {card.points.join(' ')}
+          </p>
+        )}
+        {!collapsed && !isChat && !paragraph && card.points.length > 0 && (
           <ul
             className={cn(
               'mt-1.5 space-y-1 pl-4',

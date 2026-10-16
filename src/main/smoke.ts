@@ -230,6 +230,11 @@ export function attachSmokeTest(panel: BrowserWindow, ctx: AppContext): void {
             summary['audioError'] = String(err);
           }
         }
+        if (route) {
+          // Auto-navigation (e.g. session start → Setup) may have moved us; return before capturing.
+          await panel.webContents.executeJavaScript(`location.hash = ${JSON.stringify(route)}`);
+          await new Promise((r) => setTimeout(r, 600));
+        }
         try {
           const img = await panel.webContents.capturePage();
           writeFileSync(out, img.toPNG());

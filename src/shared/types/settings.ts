@@ -76,6 +76,8 @@ export interface Settings {
     glass: boolean;
     /** Background opacity in glass mode (0.2–0.95). */
     glassAlpha: number;
+    /** How an answer's cues are shown: one flowing paragraph (spoken style) or bullet points. */
+    answerStyle: 'paragraph' | 'bullets';
   };
   extensionPort: number;
   /** Start a session + listening automatically when the extension reports a joined Meet call. */
@@ -135,6 +137,7 @@ export const DEFAULT_SETTINGS: Settings = {
     showLatency: false,
     glass: true,
     glassAlpha: 0.7,
+    answerStyle: 'paragraph',
   },
   extensionPort: 47600,
   autoStartOnMeetJoin: true,

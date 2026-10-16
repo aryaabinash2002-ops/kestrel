@@ -453,6 +453,21 @@ export default function Settings() {
                     onCheckedChange={(v) => void update({ ui: { alwaysOnTop: v } })}
                   />
                 </Row>
+                <Row
+                  label="Answer layout"
+                  hint="Paragraph reads like speech; bullets show the cues as a list."
+                >
+                  <Select
+                    options={[
+                      { value: 'paragraph', label: 'Short paragraph' },
+                      { value: 'bullets', label: 'Bullet points' },
+                    ]}
+                    value={settings.ui.answerStyle}
+                    onValueChange={(v) =>
+                      void update({ ui: { answerStyle: v as 'paragraph' | 'bullets' } })
+                    }
+                  />
+                </Row>
                 <Row label="Compact layout">
                   <Switch
                     checked={settings.ui.compact}
